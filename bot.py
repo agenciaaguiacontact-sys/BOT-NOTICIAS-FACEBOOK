@@ -17,7 +17,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -68,10 +68,11 @@ def gerar_gancho(title):
     if not GEMINI_KEY: return "NOTÍCIA DO DIA!"
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
-        payload = {"contents":[{"parts":[{"text":f"Escreva uma frase bombástica de de até 8 palavras para esta notícia: \"{title}\". Apenas a frase em MAIÚSCULAS."}]}]}
+        payload = {"contents":[{"parts":[{"text":f"Escreva uma frase de no máximo 4 palavras de forte impacto para gerar curiosidade sobre esta notícia: \"{title}\". Apenas a frase em MAIÚSCULAS e sem aspas."}]}]}
         r = requests.post(url, json=payload, timeout=15)
-        return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip().upper()
-    except: return "CLICK PARA VER!"
+        gancho = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip().upper().replace('"', '')
+        return gancho
+    except: return "VEJA AGORA!"
 
 def baixar_fonte():
     for f in ["fonts/NotoSans-Bold.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", "C:\\Windows\\Fonts\\arialbd.ttf"]:
@@ -87,12 +88,22 @@ def adicionar_texto(img_bytes, texto, p_idx):
     overlay = Image.new("RGBA", (w,h), (0,0,0,0))
     ImageDraw.Draw(overlay).rectangle([0,fy,w,h], fill=(*p["bg"], 220))
     img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"), (0,0))
-    font_path, txt = baixar_fonte(), textwrap.fill(texto, width=18)
-    font = ImageFont.truetype(font_path, 60) if font_path else ImageFont.load_default()
+    font_path = baixar_fonte()
+    txt = textwrap.fill(texto, width=12)
+    font_size = 90
+    font = ImageFont.truetype(font_path, font_size) if font_path else ImageFont.load_default()
     draw = ImageDraw.Draw(img)
     bbox = draw.multiline_textbbox((0,0), txt, font=font)
+    
+    while font_path and (bbox[2]-bbox[0] > w-40 or bbox[3]-bbox[1] > fh-20) and font_size > 30:
+        font_size -= 5
+        font = ImageFont.truetype(font_path, font_size)
+        bbox = draw.multiline_textbbox((0,0), txt, font=font)
+
     tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
     tx, ty = (w-tw)//2, fy+(fh-th)//2
+    for dx, dy in [(2,2), (-2,2), (2,-2), (-2,-2)]:
+        draw.multiline_text((tx+dx, ty+dy), txt, font=font, fill=(0,0,0), align="center", spacing=10)
     draw.multiline_text((tx,ty), txt, font=font, fill=p["tx"], align="center", spacing=10)
     out = BytesIO(); img.save(out, format="JPEG", quality=85)
     return out.getvalue()
@@ -151,21 +162,37 @@ def main():
             hook = gerar_gancho(n["title"])
             img_b = adicionar_texto(r.content, hook, int(n["id"][:2], 16))
             
+            # Legenda Curta (Corta o título e adiciona '...Ver mais')
+            short_title = n["title"]
+            words = short_title.split()
+            if len(words) > 6:
+                short_title = " ".join(words[:6]) + "..."
+            msg_legenda = f"🔥 {short_title}Ver mais"
+            
             # Post
             r_fb = requests.post(
                 f"{FB_GRAPH}/{FB_PAGE_ID}/photos",
                 files={"source": ("f.jpg", img_b, "image/jpeg")},
-                data={"message": f"🔥 {n['title']}\n\n👇 VEJA A MATÉRIA COMPLETA NO PRIMEIRO COMENTÁRIO!", "access_token": FB_TOKEN, "published": "true"},
+                data={"message": msg_legenda, "access_token": FB_TOKEN, "published": "true"},
                 timeout=60
             )
             resp = r_fb.json()
             if "id" in resp:
                 post_id = resp.get("post_id") or resp.get("id")
                 log.info(f"✓ PUBLICADO! ID: {post_id}")
-                time.sleep(3)
+                
+                # Aguarda propagação para inserir comentário
+                time.sleep(8)
                 r_link = requests.get(f"{FB_GRAPH}/{post_id}?fields=permalink_url&access_token={FB_TOKEN}")
                 log.info(f"LINK: {r_link.json().get('permalink_url')}")
-                requests.post(f"{FB_GRAPH}/{post_id}/comments", data={"message":f"🔗 Notícia aqui: {n['link']}", "access_token":FB_TOKEN})
+                
+                # Adiciona o link no comentário
+                c_resp = requests.post(f"{FB_GRAPH}/{post_id}/comments", data={"message":f"🔗 Notícia completa aqui: {n['link']}", "access_token":FB_TOKEN})
+                log.info(f"Comentário status: {c_resp.status_code}")
+                if c_resp.status_code != 200:
+                    try: log.error(f"Erro comentário detalhado: {c_resp.json()}")
+                    except: pass
+                
                 posted.add(n["id"]); save_posted(posted)
                 break
             else: log.error(f"Falha FB: {resp}")

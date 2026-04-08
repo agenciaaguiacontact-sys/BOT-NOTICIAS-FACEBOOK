@@ -1,0 +1,8 @@
+2026-04-08 14:37:52 [INFO] Bot Iniciado.
+2026-04-08 14:37:53 [INFO] Acessando login...
+2026-04-08 14:37:55 [INFO] Navegando para notÝcias...
+2026-04-08 14:38:34 [INFO] Processando: Adolescente Ú torturada com mangueira de gßs por facþÒo criminosa
+2026-04-08 14:38:40 [INFO] \u2713 PUBLICADO! ID: 1021302557732355_122106284133167745
+2026-04-08 14:38:48 [INFO] LINK: https://www.facebook.com/122106284151167745/posts/122106284133167745
+2026-04-08 14:38:48 [INFO] Comentßrio status: 403
+2026-04-08 14:38:48 [ERROR] Erro comentßrio detalhado: {'error': {'message': '(#200) You do not have sufficient permissions to perform this action', 'type': 'OAuthException', 'code': 200, 'fbtrace_id': 'AohbCSWaB9O5h5r2GMyGsBT'}}
