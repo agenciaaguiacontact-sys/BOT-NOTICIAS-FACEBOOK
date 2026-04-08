@@ -1,8 +1,0 @@
-2026-04-08 13:40:25 [INFO] Bot Iniciado.
-2026-04-08 13:40:26 [INFO] Acessando login...
-2026-04-08 13:40:46 [ERROR] Erro Playwright: Page.wait_for_selector: Timeout 20000ms exceeded.
-Call log:
-  - waiting for locator("input") to be visible
-  -     44 Î locator resolved to 4 elements. Proceeding with the first one: <input type="hidden" name="_token" autocomplete="off" value="fPfBkMIIdGmRR0wzoVRcT4sR3YJA2pIYzjzUP0gX"/>
-
-2026-04-08 13:40:47 [WARNING] Fim: Nenhuma notÝcia capturada.
