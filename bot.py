@@ -135,7 +135,7 @@ def gerar_gancho(title):
 
     for attempt in range(3):
         try:
-            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
             prompt = (
                 f"Analise a notícia: \"{title}\".\n"
                 f"Atue como um editor de notícias sensacionalista de alto impacto.\n"
@@ -362,8 +362,18 @@ def main():
         log.warning(f"Aviso: Não foi possível processar renovação automática: {e}")
 
     load_dotenv(override=True)
-    FB_PAGE_ID = os.environ.get("FB_PAGE_ID", "")
-    FB_TOKEN = os.environ.get("FB_TOKEN", "")
+    
+    # Prioridade 1: Tokens persistentes (renovados automaticamente)
+    try:
+        from auth_manager import load_persistent_tokens
+        p_tokens = load_persistent_tokens()
+        FB_PAGE_ID = p_tokens.get("FB_PAGE_ID", os.environ.get("FB_PAGE_ID", ""))
+        FB_TOKEN = p_tokens.get("FB_TOKEN", os.environ.get("FB_TOKEN", ""))
+        log.info("🔑 Usando tokens do arquivo persistente.")
+    except:
+        FB_PAGE_ID = os.environ.get("FB_PAGE_ID", "")
+        FB_TOKEN = os.environ.get("FB_TOKEN", "")
+        log.info("🔑 Usando tokens das variáveis de ambiente.")
 
     # Trava de Segurança Obligatória
     if not verificar_alvo_seguro(FB_PAGE_ID, FB_TOKEN):

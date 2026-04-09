@@ -13,6 +13,19 @@ if sys.stdout.encoding != 'utf-8':
     except:
         pass
 
+TOKEN_FILE = "persistent_tokens.json"
+
+def load_persistent_tokens():
+    """Carrega tokens do arquivo JSON se ele existir."""
+    if os.path.exists(TOKEN_FILE):
+        try:
+            with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+                import json
+                return json.load(f)
+        except:
+            pass
+    return {}
+
 def auto_renew_meta_token():
     """
     Tenta renovar o token de usuário atual para um de longa duração (60 dias)
@@ -67,13 +80,19 @@ def auto_renew_meta_token():
 
         print("✅ [RENOVAÇÃO] Novo Page Token obtido.")
         
-        # 3. Atualizar o arquivo .env
-        update_env_file({
+        # 3. Atualizar o arquivo .env e o persistent_tokens.json
+        tokens = {
             "FB_USER_TOKEN": long_user_token,
             "FB_TOKEN": new_page_token
-        })
+        }
         
-        print("🎉 [RENOVAÇÃO] Arquivo .env atualizado com sucesso!")
+        update_env_file(tokens)
+        
+        with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+            import json
+            json.dump(tokens, f, indent=2)
+        
+        print(f"🎉 [RENOVAÇÃO] Arquivos .env e {TOKEN_FILE} atualizados!")
         return new_page_token
 
     except Exception as e:

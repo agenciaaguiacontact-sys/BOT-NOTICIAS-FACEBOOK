@@ -45,7 +45,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           # Adiciona arquivos de estado se eles existirem
-          git add posted_ids.json last_title.txt || true
+          git add posted_ids.json last_title.txt persistent_tokens.json || true
           # Só commita se houver mudanças
           if git diff --cached --quiet; then
             echo "Nenhuma mudança para salvar."
