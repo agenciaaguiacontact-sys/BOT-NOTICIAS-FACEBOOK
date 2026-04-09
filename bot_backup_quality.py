@@ -64,27 +64,12 @@ def save_posted(ids):
 def make_article_id(url):
     return hashlib.sha256(url.encode()).hexdigest()[:16]
 
-def load_last_title():
-    if os.path.exists("last_title.txt"):
-        try: return open("last_title.txt", "r", encoding="utf-8").read().strip()
-        except: return ""
-    return ""
-
-def save_last_title(title):
-    try: open("last_title.txt", "w", encoding="utf-8").write(title)
-    except: pass
-
 def baixar_fonte(emoji=False):
-    # Priorizar fonte local para compatibilidade com Nuvem (Linux)
-    local_impact = os.path.join("fonts", "impact.ttf")
-    if os.path.exists(local_impact): return local_impact
-
     if emoji:
         for f in ["C:\\Windows\\Fonts\\seguiemj.ttf"]:
             if os.path.exists(f): return f
-            
-    # Fallbacks de sistema
-    for f in ["C:\\Windows\\Fonts\\impact.ttf", "fonts/NotoSans-Bold.ttf", "C:\\Windows\\Fonts\\arialbd.ttf"]:
+    # Priorizar Impact para alto impacto, Arial Black como segunda opção
+    for f in ["C:\\Windows\\Fonts\\impact.ttf", "C:\\Windows\\Fonts\\ariblk.ttf", "fonts/NotoSans-Bold.ttf", "C:\\Windows\\Fonts\\arialbd.ttf"]:
         if os.path.exists(f): return f
     return None
 
@@ -93,34 +78,24 @@ def limpar_emojis(texto):
     return re.sub(r'[^\w\s.,!?;:\"\'\(\)\-\u00C0-\u00FF]+', '', texto).strip()
 
 def gerar_gancho(title):
-    if not GEMINI_KEY: return "REVELAÇÃO CHOCANTE! 😱"
-    last_t = load_last_title()
-    
-    for attempt in range(3):
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
-            prompt = (
-                f"Como um mestre de clickbait sensacionalista brasileiro, crie um título EXTREMAMENTE CURTO (MÁXIMO 3 PALAVRAS). "
-                f"O título DEVE ser relacionado à notícia: \"{title}\". "
-                f"Use UM emoji impactante no final (ex: 😱, 💀, 🔥). Ex: REVELAÇÃO CHOCANTE! 😱. "
-                f"Título em MAIÚSCULAS. Não repita: \"{last_t}\"."
-            )
-            payload = {"contents":[{"parts":[{"text":prompt}]}]}
-            r = requests.post(url, json=payload, timeout=15)
-            r.raise_for_status()
-            res = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip().upper().replace('"', '')
-            
-            # Garante que não é idêntico ao último
-            if res != last_t:
-                save_last_title(res)
-                return res
-        except Exception as e:
-            log.warning(f"Erro Gemini (tentativa {attempt}): {e}")
-            
-    return "MUITO IMPACTANTE! 😱"
+    if not GEMINI_KEY: return "VOCÊ NÃO VAI ACREDITAR! 😱"
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+        prompt = (
+            f"Como um mestre de clickbait sensacionalista brasileiro, crie um título CURTO e IMPACTANTE (máximo 5 palavras). "
+            f"Use UM emoji impactante no final (ex: 💀, 😱, 🔥). Ex: NINGUÉM ACREDITOU NISSO! 😱. "
+            f"Evite frases genéricas sem sentido. Notícia: \"{title}\". Título em MAIÚSCULAS."
+        )
+        payload = {"contents":[{"parts":[{"text":prompt}]}]}
+        r = requests.post(url, json=payload, timeout=15)
+        r.raise_for_status()
+        return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip().upper().replace('"', '')
+    except Exception as e:
+        log.warning(f"Erro Gemini: {e}")
+        return "OUÇA ESTA REVELAÇÃO! 😱"
 
 def adicionar_texto_premium(img_bytes, texto):
-    # Paleta de Cores Noticiário
+    # Paleta de Cores Noticiário (Transparência de 170 conforme solicitado)
     PALETTES = [
         (220, 20, 60, 170),   # Vermelho Alerta
         (0, 51, 153, 170),    # Azul Marinho News
@@ -130,98 +105,89 @@ def adicionar_texto_premium(img_bytes, texto):
 
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
     w, h = img.size
-    
-    # --- PADRONIZAÇÃO 1:1 (QUADRADA) ---
-    side = min(w, h)
-    left = (w - side) / 2
-    top = (h - side) / 2
-    img_sq = img.crop((left, top, left + side, top + side))
-    
-    # --- CONFIGURAÇÃO SUPERSAMPLING (2x para 1080x1080) ---
-    sf = 2
-    target_side = 1080
-    bw = bh = target_side * sf
 
-    # 1. Redimensionamento em Alta Definição
-    img_hd = img_sq.resize((bw, bh), Image.Resampling.LANCZOS)
-    img_hd = ImageEnhance.Color(img_hd).enhance(1.3)
-    img_hd = ImageEnhance.Contrast(img_hd).enhance(1.1)
-    img_hd = ImageEnhance.Sharpness(img_hd).enhance(1.4) 
+    # Zoom/Crop
+    zoom = 1.15
+    nw, nh = int(w * zoom), int(h * zoom)
+    img = img.resize((nw, nh), Image.Resampling.LANCZOS)
+    left, top = int((nw - w) / 2), int((nh - h) / 2)
+    img = img.crop((left, top, left + w, top + h))
+    img = ImageEnhance.Color(img).enhance(1.3)
+    img = ImageEnhance.Contrast(img).enhance(1.1)
+    img = ImageEnhance.Sharpness(img).enhance(1.4) # Adiciona nitidez profissional
 
-    # 2. Gradiente de Base Ampliado (Mais denso no 1:1)
-    overlay = Image.new("RGBA", (bw, bh), (0, 0, 0, 0))
+    # 1. Gradiente de Base Ampliado (Subindo)
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw_ov = ImageDraw.Draw(overlay)
-    grad_h = int(bh * 0.70)
-    for y in range(bh - grad_h, bh):
-        alpha = int(245 * ((y - (bh - grad_h)) / grad_h))
-        draw_ov.line([(0, y), (bw, y)], fill=(0, 0, 0, max(0, min(255, alpha))))
+    grad_h = int(h * 0.70)
+    for y in range(h - grad_h, h):
+        alpha = int(245 * ((y - (h - grad_h)) / grad_h))
+        draw_ov.line([(0, y), (w, y)], fill=(0, 0, 0, max(0, min(255, alpha))))
     
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=5 * sf))
-    img_hd = Image.alpha_composite(img_hd.convert("RGBA"), overlay)
-    draw_hd = ImageDraw.Draw(img_hd)
-    
+    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=5))
+    if img.size != overlay.size:
+        overlay = overlay.resize(img.size)
+    img = Image.alpha_composite(img.convert("RGBA"), overlay)
+    draw = ImageDraw.Draw(img)
     font_path = baixar_fonte()
-    
-    # 3. Selo URGENTE Premium
-    badge_h = int(bh * 0.05)
-    f_badge = ImageFont.truetype(font_path, int(badge_h * 0.75)) if font_path else ImageFont.load_default()
+    emoji_font_path = baixar_fonte(emoji=True)
+
+    # 2. Selo URGENTE (Correção de Largura)
+    badge_h = int(h * 0.05)
+    f_badge = ImageFont.truetype(font_path, int(badge_h * 0.7)) if font_path else ImageFont.load_default()
     txt_badge = "NOTÍCIA URGENTE"
-    bbox_b = draw_hd.textbbox((0,0), txt_badge, font=f_badge)
-    badge_w = (bbox_b[2] - bbox_b[0]) + (40 * sf)
-    
-    # Selo Centralizado
-    bx1, by1 = 30*sf, 40*sf
-    bx2, by2 = bx1 + badge_w, by1 + badge_h
-    draw_hd.rectangle([bx1, by1, bx2, by2], fill=(220, 20, 60, 255))
-    draw_hd.text(((bx1 + bx2)//2, (by1 + by2)//2), txt_badge, font=f_badge, fill=(255, 255, 255), anchor="mm")
+    bbox_b = draw.textbbox((0,0), txt_badge, font=f_badge)
+    badge_w = (bbox_b[2] - bbox_b[0]) + 40
+    draw.rectangle([20, 30, 20 + badge_w, 30 + badge_h], fill=(220, 20, 60, 255))
+    draw.text((40, 30 + (badge_h - int(badge_h * 0.7))//2 - 2), txt_badge, font=f_badge, fill=(255, 255, 255))
 
     texto_puro = limpar_emojis(texto)
-    f_size = int(bh * 0.10) # Ligeiramente maior para títulos curtos
+    has_emoji = any(ord(c) > 127 for c in texto)
+    
+    # 3. Caixa de Texto CENTRALIZADA e RESPONSIVA
+    f_size = int(h * 0.09) 
     font = ImageFont.truetype(font_path, f_size) if font_path else ImageFont.load_default()
+    # Aumentar largura para 25 conforme solicitado
+    lines = textwrap.wrap(texto_puro, width=25)
     
-    # GARANTE 1 LINHA (sem wrap)
-    l = texto_puro.strip()
-    bb = draw_hd.textbbox((0, 0), l, font=font)
-    lw, lh = bb[2] - bb[0], bb[3] - bb[1]
-    
-    # Se ainda for muito grande (raro com 3 palavras), reduz a fonte
-    if lw > (bw - 100*sf):
-        f_size = int(f_size * (bw - 100*sf) / lw)
-        font = ImageFont.truetype(font_path, f_size) if font_path else ImageFont.load_default()
-        bb = draw_hd.textbbox((0, 0), l, font=font)
+    line_metrics = []
+    max_lw = 0
+    total_lh = 0
+    for l in lines:
+        bb = draw.textbbox((0, 0), l, font=font)
         lw, lh = bb[2] - bb[0], bb[3] - bb[1]
+        line_metrics.append((l, lw, lh))
+        max_lw = max(max_lw, lw)
+        total_lh += lh + 15
 
-    tx = (bw - lw) // 2
-    padding = 35 * sf
-    ty = int(bh * 0.82) - lh
+    tx = (w - max_lw) // 2
+    padding = 30
+    # Posicionamento Dinâmico (Proporcional ao h) - CENTRO INFERIOR (Ajustado para respiro)
+    ty = int(h * 0.75) - (total_lh // 2)
     
-    # 4. Fundo do Título (Box)
-    tx1, ty1 = tx - padding, ty - padding
-    tx2, ty2 = tx + lw + padding, ty + lh + padding
-    temp_box = Image.new("RGBA", (bw, bh), (0,0,0,0))
+    # Fundo UNIFICADO Noticiário
+    temp_box = Image.new("RGBA", (w, h), (0,0,0,0))
     draw_box = ImageDraw.Draw(temp_box)
-    draw_box.rectangle([tx1, ty1, tx2, ty2], fill=MAIN_COLOR)
-    img_hd = Image.alpha_composite(img_hd, temp_box)
+    draw_box.rectangle([tx-padding, ty-padding, tx+max_lw+padding, ty+total_lh-15+padding], fill=MAIN_COLOR)
+    img = Image.alpha_composite(img, temp_box)
     
-    # Centro do box para ancoragem
-    cx, cy = (tx1 + tx2) // 2, (ty1 + ty2) // 2
-    
-    # 5. Camada de Sombras Suaves (Drop Shadows)
-    shadow_layer = Image.new("RGBA", (bw, bh), (0,0,0,0))
-    s_draw = ImageDraw.Draw(shadow_layer)
-    s_draw.text((cx + 4*sf, cy + 4*sf), l, font=font, fill=(0,0,0,200), anchor="mm")
-    
-    shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(radius=3 * sf))
-    img_hd = Image.alpha_composite(img_hd, shadow_layer)
-    
-    # 6. Desenhar Texto Principal (Nítido)
-    draw_hd = ImageDraw.Draw(img_hd)
-    draw_hd.text((cx, cy), l, font=font, fill=(255, 255, 255), anchor="mm")
+    # Desenhar Título EM NEGRITO e com REALCE EXTRA
+    draw = ImageDraw.Draw(img)
+    curr_y = ty
+    for l, lw, lh in line_metrics:
+        lx = tx + (max_lw - lw) // 2
+        # Sombra Leve (Preto com leve offset e opacidade baixa)
+        draw.text((lx+4, curr_y+4), l, font=font, fill=(0,0,0,160), align="center")
+        # Texto Principal (Branco) - REMOVIDO STROKE conforme solicitado
+        draw.text((lx, curr_y), l, font=font, fill=(255, 255, 255), align="center")
+        curr_y += lh + 15
         
-    # 7. Ícone PREMIUM (Centralizado)
+    # 4. Ícone PREMIUM (Estilo iPhone) CENTRALIZADO
+    EMOJI_MAP = {
+        "🚨": "1f6a8", "💀": "1f480", "🔥": "1f525", "💣": "1f4a3", "⚠️": "26a0"
+    }
     icons = ["🚨", "💀", "🔥", "💣", "⚠️"]
     char = random.choice(icons)
-    EMOJI_MAP = {"🚨": "1f6a8", "💀": "1f480", "🔥": "1f525", "💣": "1f4a3", "⚠️": "26a0"}
     hex_code = EMOJI_MAP.get(char, "1f480")
     emoji_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{hex_code}.png"
     
@@ -229,38 +195,39 @@ def adicionar_texto_premium(img_bytes, texto):
         r_emoji = requests.get(emoji_url, timeout=10)
         if r_emoji.status_code == 200:
             emoji_img = Image.open(BytesIO(r_emoji.content)).convert("RGBA")
-            e_size = int(f_size * 1.5)
+            # Redimensionar ícone proporcionalmente (ligeiramente menor agora: 1.6)
+            e_size = int(f_size * 1.6)
             emoji_img = emoji_img.resize((e_size, e_size), Image.Resampling.LANCZOS)
-            ix = (bw - e_size) // 2
-            iy = ty - e_size - (20 * sf)
             
-            # Sombra do Ícone
-            e_shadow = Image.new("RGBA", (bw, bh), (0,0,0,0))
-            ImageDraw.Draw(e_shadow).ellipse([ix+8*sf, iy+8*sf, ix+e_size+8*sf, iy+e_size+8*sf], fill=(0,0,0,150))
-            e_shadow = e_shadow.filter(ImageFilter.GaussianBlur(radius=8*sf))
-            img_hd = Image.alpha_composite(img_hd, e_shadow)
-            img_hd.paste(emoji_img, (ix, iy), emoji_img)
-    except: pass
+            # Centralização perfeita
+            ix = (w - e_size) // 2
+            iy = ty - e_size - 10 # Logo acima do bloco de texto com respiro
+            
+            # Sombra do Ícone para profundidade
+            shadow = Image.new("RGBA", (e_size, e_size), (0,0,0,0))
+            ImageDraw.Draw(shadow).ellipse([5, 5, e_size-5, e_size-5], fill=(0,0,0,150))
+            shadow = shadow.filter(ImageFilter.GaussianBlur(radius=10))
+            img.paste(shadow, (ix+8, iy+8), shadow)
+            
+            # Colar o emoji
+            img.paste(emoji_img, (ix, iy), emoji_img)
+    except Exception as e:
+        log.warning(f"Erro ao carregar emoji premium: {e}")
 
-    # 8. CTA Dinâmico (Sombra projetada)
-    f_sub_size = int(badge_h * 0.75)
+    # 5. CTA DINÂMICO (Posicionado sob o título)
+    f_sub_size = int(badge_h * 0.8)
     f_sub = ImageFont.truetype(font_path, f_sub_size) if font_path else ImageFont.load_default()
     cta_t = 'Clique em "...mais" para ver na íntegra'
-    bw_cta = draw_hd.textbbox((0,0), cta_t, font=f_sub)
-    cx = (bw - (bw_cta[2]-bw_cta[0]))//2
-    cy = bh - (65 * sf) # Mais espaço no 1:1
+    bw_cta = draw.textbbox((0,0), cta_t, font=f_sub)
+    cx = (w - (bw_cta[2]-bw_cta[0]))//2
+    # Posição fixa no EXTREMO INFERIOR
+    cy = h - 45 
     
-    cta_shadow = Image.new("RGBA", (bw, bh), (0,0,0,0))
-    ImageDraw.Draw(cta_shadow).text((cx + 2*sf, cy + 2*sf), cta_t, font=f_sub, fill=(0,0,0,220))
-    cta_shadow = cta_shadow.filter(ImageFilter.GaussianBlur(radius=2*sf))
-    img_hd = Image.alpha_composite(img_hd, cta_shadow)
-    
-    draw_hd.text((cx, cy), cta_t, font=f_sub, fill=(255, 215, 0))
+    # Sombra CTA
+    draw.text((cx+3, cy+3), cta_t, font=f_sub, fill=(0,0,0,220))
+    draw.text((cx, cy), cta_t, font=f_sub, fill=(255, 215, 0))
 
-    # --- FINALIZAÇÃO: REDUÇÃO PARA 1080x1080 PADRÃO ---
-    final_img = img_hd.resize((target_side, target_side), Image.Resampling.LANCZOS).convert("RGB")
-    out = BytesIO()
-    final_img.save(out, format="JPEG", quality=98)
+    out = BytesIO(); img.convert("RGB").save(out, format="JPEG", quality=98)
     return out.getvalue()
 
 def get_noticias():

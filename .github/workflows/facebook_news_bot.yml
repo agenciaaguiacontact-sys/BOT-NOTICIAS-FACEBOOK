@@ -1,0 +1,50 @@
+name: Facebook News Bot
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Roda a cada 10 minutos
+  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Necessário para salvar o posted_ids.json de volta no repositório
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          npx playwright install --with-deps chromium
+
+      - name: Run Bot
+        env:
+          SFY_EMAIL: ${{ secrets.SFY_EMAIL }}
+          SFY_PASSWORD: ${{ secrets.SFY_PASSWORD }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_TOKEN: ${{ secrets.FB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python bot.py
+
+      - name: Commit and Push Persistence Files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Adiciona arquivos de estado se eles existirem
+          git add posted_ids.json last_title.txt || true
+          # Só commita se houver mudanças
+          if git diff --cached --quiet; then
+            echo "Nenhuma mudança para salvar."
+          else
+            git commit -m "chore: persistência de IDs postados [skip ci]"
+            git push
+          fi

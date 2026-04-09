@@ -1,0 +1,70 @@
+2026-04-08 18:04:53 [INFO] Bot Profissional NotÝcias Iniciado.
+2026-04-08 18:04:53 [INFO] Acessando SFY...
+2026-04-08 18:05:35 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:35 [ERROR] Erro no loop principal: images do not match
+2026-04-08 18:05:35 [ERROR] Traceback (most recent call last):
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 273, in main
+    img_b = adicionar_texto_premium(r.content, hook)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 126, in adicionar_texto_premium
+    img = Image.alpha_composite(img.convert("RGBA"), overlay)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\.venv\Lib\site-packages\PIL\Image.py", line 3551, in alpha_composite
+    return im1._new(core.alpha_composite(im1.im, im2.im))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: images do not match
+
+2026-04-08 18:05:36 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:37 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:37 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:38 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:39 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:39 [ERROR] Erro no loop principal: images do not match
+2026-04-08 18:05:39 [ERROR] Traceback (most recent call last):
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 273, in main
+    img_b = adicionar_texto_premium(r.content, hook)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 126, in adicionar_texto_premium
+    img = Image.alpha_composite(img.convert("RGBA"), overlay)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\.venv\Lib\site-packages\PIL\Image.py", line 3551, in alpha_composite
+    return im1._new(core.alpha_composite(im1.im, im2.im))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: images do not match
+
+2026-04-08 18:05:40 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:40 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:41 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:42 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:42 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:43 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:44 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:45 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:45 [ERROR] Erro no loop principal: images do not match
+2026-04-08 18:05:45 [ERROR] Traceback (most recent call last):
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 273, in main
+    img_b = adicionar_texto_premium(r.content, hook)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 126, in adicionar_texto_premium
+    img = Image.alpha_composite(img.convert("RGBA"), overlay)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\.venv\Lib\site-packages\PIL\Image.py", line 3551, in alpha_composite
+    return im1._new(core.alpha_composite(im1.im, im2.im))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: images do not match
+
+2026-04-08 18:05:45 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:46 [WARNING] Erro Gemini: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
+2026-04-08 18:05:46 [ERROR] Erro no loop principal: images do not match
+2026-04-08 18:05:46 [ERROR] Traceback (most recent call last):
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 273, in main
+    img_b = adicionar_texto_premium(r.content, hook)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\bot.py", line 126, in adicionar_texto_premium
+    img = Image.alpha_composite(img.convert("RGBA"), overlay)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\#1-CRIAÃıES-AUTOMAÃıES-EXTENSıES\BOT NOTICIAS PAGINA FACE\.venv\Lib\site-packages\PIL\Image.py", line 3551, in alpha_composite
+    return im1._new(core.alpha_composite(im1.im, im2.im))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: images do not match
+

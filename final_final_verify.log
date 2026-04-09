@@ -1,0 +1,35 @@
+2026-04-08 14:51:50 [INFO] Bot Iniciado.
+2026-04-08 14:51:50 [INFO] Acessando login...
+2026-04-08 14:51:53 [INFO] Navegando para notÝcias...
+2026-04-08 14:52:32 [INFO] Processando: Iza reflete sobre ter reatado com Yuri Lima ap¾s traiþÒo: Qualquer um estß sujeito
+2026-04-08 14:52:33 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'AXELK_5lqwPMcQZJJlbn_ao'}}
+2026-04-08 14:52:33 [INFO] Processando: Adolescente Ú torturada com mangueira de gßs por facþÒo criminosa
+2026-04-08 14:52:33 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'Am1WTbU1IoMum6gx78MPAMa'}}
+2026-04-08 14:52:33 [INFO] Processando: Conselho Tutelar notifica escola das filhas de VirgÝnia Fonseca ap¾s den·ncias; influenciadora pode ser convocada a depor
+2026-04-08 14:52:35 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'AwZECb4XctgVZdf0EN2zhAD'}}
+2026-04-08 14:52:35 [INFO] Processando: BBB26: Globo emite nota sobre estado de sa·de de Leandro
+2026-04-08 14:52:35 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'Ako9Hwc_2iz9Ul4fzkMbiyx'}}
+2026-04-08 14:52:35 [INFO] Processando: Maira Cardi fala sobre diagn¾stico preocupante da filha de 5 meses
+2026-04-08 14:52:37 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'AeTcGGrui4k-zx0qaw5rbTk'}}
+2026-04-08 14:52:37 [INFO] Processando: Gabriela discute com Marciele no BBB 26: VocÛ Ú minha amiga ou inimiga?
+2026-04-08 14:52:38 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'AlPNaM22TPpR5zxgSOo8esV'}}
+2026-04-08 14:52:38 [INFO] Processando: Adolescente invade escola e fere cinco crianþas com canivete em MG
+2026-04-08 14:52:39 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'A44akONy5nXY86aQwqFdw9s'}}
+2026-04-08 14:52:39 [INFO] Processando: Policial aposentado ameaþa ex: ôDecapitar e jogar bola com tua cabeþaö. Veja vÝdeo
+2026-04-08 14:52:40 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'AUUnreLURjZrec0r68qXC30'}}
+2026-04-08 14:52:40 [INFO] Processando: Lore Improta relata reta final da gravidez e revela quantos quilos engordou: Falta de ar
+2026-04-08 14:52:41 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'ACluwuAbKOo4HXhko-ScCu_'}}
+2026-04-08 14:52:41 [INFO] Processando: Homem Ú condenado por matar ex na frente dos filhos em Goißs
+2026-04-08 14:52:41 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'A55i9Elm8LlPA1BL4BMkL3n'}}
+2026-04-08 14:52:41 [INFO] Processando: Pessoas doentes e sujas: marido de Simone Mendes, Kakß Diniz se revolta e acusa web de distorcer fala sobre traiþÒo. VÝdeo!
+2026-04-08 14:52:42 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'Ar9zipKOBzj4A4QSBCCNoTW'}}
+2026-04-08 14:52:42 [INFO] Processando: Sancho Loko: quem Ú o PM influencer preso e investigado por tortura. Veja vÝdeo
+2026-04-08 14:52:42 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'Aj0HxxT39prn3v3JowyqQoZ'}}
+2026-04-08 14:52:42 [INFO] Processando: Ex-BBB Samira ganha presentes inusitados na Globo; veja reaþÒo
+2026-04-08 14:52:44 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'AlBAi7ZR0L-EK90KYH86HsH'}}
+2026-04-08 14:52:44 [INFO] Processando: Leandro Boneco estß em atendimento mÚdico; brothers recebem aviso no BBB 26
+2026-04-08 14:52:45 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'AcCoOBVymG0SRyfpm7D5olY'}}
+2026-04-08 14:52:45 [INFO] Processando: MÚdico e enfermeira sÒo presos por aplicarem Mounjaro vencido no Rio
+2026-04-08 14:52:45 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'A3PnzY9tEf0mvxjoSXaUx1e'}}
+2026-04-08 14:52:45 [INFO] Processando: Piloto de aviÒo de SP some ao viajar para entrevista de emprego no PA
+2026-04-08 14:52:46 [ERROR] Falha FB: {'error': {'message': 'The access token could not be decrypted', 'type': 'OAuthException', 'code': 190, 'fbtrace_id': 'ArtvQU7kVtgiVAXWc6oZhix'}}
