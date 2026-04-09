@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 # Configurações
 SFY_EMAIL    = os.environ.get("SFY_EMAIL", "")
 SFY_PASSWORD = os.environ.get("SFY_PASSWORD", "")
-FB_PAGE_ID   = os.environ.get("FB_PAGE_ID", "")
+FB_PAGE_ID   = os.environ.get("FB_PAGE_ID", "1021302557732355")
 FB_TOKEN     = os.environ.get("FB_TOKEN", "")
 GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
 
