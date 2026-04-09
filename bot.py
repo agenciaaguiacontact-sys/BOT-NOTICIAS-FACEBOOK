@@ -119,7 +119,7 @@ def gerar_gancho(title):
 
     for attempt in range(3):
         try:
-            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_KEY}"
             prompt = (
                 f"Analise a notícia: \"{title}\".\n"
                 f"Atue como um editor de notícias sensacionalista de alto impacto.\n"
