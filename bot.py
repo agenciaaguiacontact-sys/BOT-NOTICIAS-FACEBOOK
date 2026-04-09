@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 # Configurações
 SFY_EMAIL    = os.environ.get("SFY_EMAIL", "")
 SFY_PASSWORD = os.environ.get("SFY_PASSWORD", "")
-FB_PAGE_ID   = os.environ.get("FB_PAGE_ID", "1021302557732355")
+FB_PAGE_ID   = os.environ.get("FB_PAGE_ID", "122181202022766925")
 FB_TOKEN     = os.environ.get("FB_TOKEN", "")
 GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
 
@@ -119,7 +119,7 @@ def gerar_gancho(title):
 
     for attempt in range(3):
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
             prompt = (
                 f"Analise a notícia: \"{title}\".\n"
                 f"Atue como um editor de notícias sensacionalista de alto impacto.\n"
