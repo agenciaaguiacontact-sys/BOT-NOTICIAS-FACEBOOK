@@ -1,55 +1,54 @@
-name: Facebook News Bot
+name: 🤖 Bot Notícias Facebook
 
 on:
-  push:
-    branches: [ main ]
   schedule:
-    - cron: '*/10 * * * *' # Roda a cada 10 minutos
-  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
+    - cron: '*/10 * * * *'  # A cada 10 minutos (pode ter atraso de até 1h no GitHub)
+  workflow_dispatch:          # Permite rodar manualmente pelo painel do GitHub
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Necessário para salvar o posted_ids.json de volta no repositório
+      contents: write  # Necessário para fazer commit do posted_ids.json de volta
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout do repositório
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 🐍 Configurar Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
+      - name: 📦 Instalar dependências Python
+        run: pip install -r requirements.txt
 
-      - name: Run Bot
+      - name: 🌐 Instalar Playwright + Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - name: 🤖 Rodar Bot
         env:
-          SFY_EMAIL: ${{ secrets.SFY_EMAIL }}
-          SFY_PASSWORD: ${{ secrets.SFY_PASSWORD }}
-          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
-          FB_TOKEN: ${{ secrets.FB_TOKEN }}
-          FB_APP_ID: ${{ secrets.FB_APP_ID }}
-          FB_APP_SECRET: ${{ secrets.FB_APP_SECRET }}
-          FB_USER_TOKEN: ${{ secrets.FB_USER_TOKEN }}
+          SFY_EMAIL:      ${{ secrets.SFY_EMAIL }}
+          SFY_PASSWORD:   ${{ secrets.SFY_PASSWORD }}
+          FB_PAGE_ID:     ${{ secrets.FB_PAGE_ID }}
+          FB_TOKEN:       ${{ secrets.FB_TOKEN }}
+          FB_APP_ID:      ${{ secrets.FB_APP_ID }}
+          FB_APP_SECRET:  ${{ secrets.FB_APP_SECRET }}
+          FB_USER_TOKEN:  ${{ secrets.FB_USER_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python bot.py
 
-      - name: Commit and Push Persistence Files
+      - name: 💾 Salvar estado de posts publicados
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # Adiciona arquivos de estado se eles existirem
-          git add posted_ids.json last_title.txt persistent_tokens.json || true
-          # Só commita se houver mudanças
+          # Adiciona posted_ids.json e last_title.txt se existirem
+          git add posted_ids.json last_title.txt 2>/dev/null || true
+          # Só commita se houver mudanças reais
           if git diff --cached --quiet; then
-            echo "Nenhuma mudança para salvar."
+            echo "ℹ️ Nenhuma mudança de estado para salvar."
           else
-            git commit -m "chore: persistência de IDs postados [skip ci]"
+            git commit -m "chore: atualizar estado do bot [skip ci]"
             git push
           fi

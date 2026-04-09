@@ -315,7 +315,7 @@ def get_noticias():
             log.info("Selecionando bloco Sharesforyou...")
             try:
                 page.click("button.change-order-by:has-text('Sharesforyou')", timeout=15000)
-                page.wait_for_timeout(10000) # Aumentado para 10s para garantir carregamento
+                page.wait_for_timeout(10000)
             except Exception as e:
                 log.warning(f"Não foi possível clicar no botão Sharesforyou (pode já estar selecionado): {e}")
 
@@ -330,7 +330,21 @@ def get_noticias():
                     if link and title:
                         if link.startswith("/"): link = "https://www.sharesforyou.com" + link
                         if img and img.startswith("/"): img = "https://www.sharesforyou.com" + img
-                        res.append({"id":make_article_id(link), "title":title, "link":link, "img":img})
+                        
+                        # FIX 403: baixar imagem dentro da sessão autenticada do Playwright
+                        img_bytes = None
+                        if img:
+                            try:
+                                resp = page.request.get(img)
+                                if resp.status == 200:
+                                    img_bytes = resp.body()
+                                    log.info(f"🖼️ Imagem baixada via Playwright ({len(img_bytes)//1024}KB)")
+                                else:
+                                    log.warning(f"⚠️ Status imagem: {resp.status} para {img}")
+                            except Exception as e_img:
+                                log.warning(f"⚠️ Erro baixando imagem via Playwright: {e_img}")
+                        
+                        res.append({"id": make_article_id(link), "title": title, "link": link, "img": img, "img_bytes": img_bytes})
                 except: continue
         except Exception as e: log.error(f"Erro Playwright: {e}")
         finally: browser.close()
@@ -339,46 +353,43 @@ def get_noticias():
 def main():
     log.info("Bot Profissional Notícias Iniciado.")
     
-    try:
-        from auth_manager import auto_renew_meta_token
-        auto_renew_meta_token()
-    except Exception as e:
-        log.warning(f"Aviso: Não foi possível processar renovação automática: {e}")
-
+    # Ler tokens diretamente das variáveis de ambiente (padrão do GitHub Actions)
     load_dotenv(override=True)
+    FB_PAGE_ID = os.environ.get("FB_PAGE_ID", "").strip()
+    FB_TOKEN   = os.environ.get("FB_TOKEN", "").strip()
     
-    # Prioridade 1: Tokens persistentes (renovados automaticamente)
-    try:
-        from auth_manager import load_persistent_tokens
-        p_tokens = load_persistent_tokens()
-        FB_PAGE_ID = p_tokens.get("FB_PAGE_ID", os.environ.get("FB_PAGE_ID", ""))
-        FB_TOKEN = p_tokens.get("FB_TOKEN", os.environ.get("FB_TOKEN", ""))
-        log.info("🔑 Usando tokens do arquivo persistente.")
-    except:
-        FB_PAGE_ID = os.environ.get("FB_PAGE_ID", "")
-        FB_TOKEN = os.environ.get("FB_TOKEN", "")
-        log.info("🔑 Usando tokens das variáveis de ambiente.")
-
-
+    if not FB_TOKEN or not FB_PAGE_ID:
+        log.error("❌ FB_TOKEN ou FB_PAGE_ID não configurados. Encerrando.")
+        return
+    
+    log.info(f"🔑 PAGE_ID: {FB_PAGE_ID}")
+    log.info(f"🔑 TOKEN: {FB_TOKEN[:20]}...")
 
     posted = load_posted()
-    session = make_session()
     news = get_noticias()
-    if not news: return
+    if not news:
+        log.warning("Nenhuma notícia encontrada.")
+        return
     
     for n in news:
         if n["id"] in posted:
             log.info(f"⏭️ Pulando: {n['title'][:50]}... (Já postado)")
             continue
         try:
-            if not n["img"]:
-                log.warning(f"⚠️ Pulando: {n['title'][:50]}... (Sem imagem)")
-                continue
-            r = session.get(n["img"], timeout=15)
-            if r.status_code != 200: continue
+            # Usar bytes baixados via Playwright (evita 403) ou fallback por URL
+            img_data = n.get("img_bytes")
+            if img_data is None:
+                if not n.get("img"):
+                    log.warning(f"⚠️ Sem imagem para: {n['title'][:50]}")
+                    continue
+                r_img = requests.get(n["img"], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+                if r_img.status_code != 200:
+                    log.warning(f"⚠️ Imagem retornou {r_img.status_code}, pulando.")
+                    continue
+                img_data = r_img.content
             
             estetica = gerar_gancho(n["title"])
-            img_b = adicionar_texto_premium(r.content, estetica)
+            img_b = adicionar_texto_premium(img_data, estetica)
             
             padding = "\n.\n.\n.\n.\n.\n"
             msg = f"😱 {n['title'].upper()} 😱\n\nNotícia urgente! Veja os detalhes chocantes agora... 💣🔥\n{padding}🔗 LINK: {n['link']}"
@@ -389,14 +400,16 @@ def main():
                 data={"message": msg, "access_token": FB_TOKEN, "published": "true"},
                 timeout=60
             )
-            if "id" in r_fb.json():
-                post_id = r_fb.json()["id"]
-                log.info(f"✓ PUBLICADO! ID: {post_id}")
-                log.info(f"LINK: https://www.facebook.com/{FB_PAGE_ID}/posts/{post_id.split('_')[-1]}")
-                posted.add(n["id"]); save_posted(posted)
+            resp_data = r_fb.json()
+            if "id" in resp_data:
+                post_id = resp_data["id"]
+                log.info(f"✅ PUBLICADO! ID: {post_id}")
+                log.info(f"🔗 LINK: https://www.facebook.com/{FB_PAGE_ID}/posts/{post_id.split('_')[-1]}")
+                posted.add(n["id"])
+                save_posted(posted)
                 break
             else:
-                log.error(f"Erro FB: {r_fb.json()}")
+                log.error(f"Erro FB: {resp_data}")
         except Exception as e: 
             log.error(f"Erro no loop principal: {e}")
             log.error(traceback.format_exc())
