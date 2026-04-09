@@ -1,8 +1,0 @@
-2026-04-08 15:06:43 [INFO] Bot Iniciado.
-2026-04-08 15:06:44 [INFO] Acessando login...
-2026-04-08 15:06:49 [INFO] Navegando para notÝcias...
-2026-04-08 15:07:28 [INFO] Processando: TV Globo quer Ana Castela protagonista em nova novela
-2026-04-08 15:07:32 [INFO] \u2713 PUBLICADO! ID: 1021302557732355_122106287103167745
-2026-04-08 15:07:41 [INFO] LINK: https://www.facebook.com/122106284151167745/posts/122106287103167745
-2026-04-08 15:07:41 [INFO] Comentßrio status: 403
-2026-04-08 15:07:41 [ERROR] Erro comentßrio detalhado: {'error': {'message': '(#200) You do not have sufficient permissions to perform this action', 'type': 'OAuthException', 'code': 200, 'fbtrace_id': 'Awaf3hcv_-2E--dBGGoANIK'}}

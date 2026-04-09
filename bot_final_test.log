@@ -1,9 +1,0 @@
-2026-04-08 16:19:49 [INFO] Bot Iniciado.
-2026-04-08 16:19:51 [INFO] Acessando login...
-2026-04-08 16:19:53 [INFO] Navegando para notÝcias...
-2026-04-08 16:20:33 [INFO] Processando: PolÝcia conclui que irmÒs planejaram a morte da pr¾pria mÒe no Tocantins
-2026-04-08 16:20:34 [WARNING] Erro Gemini (Chave expirada ou modelo invßlido): 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBhbETVbU-9BQyKJDosP2Am-hxjHro6U_g
-2026-04-08 16:20:38 [INFO] \u2713 PUBLICADO! ID: 1021302557732355_122106292791167745
-2026-04-08 16:20:46 [INFO] LINK: https://www.facebook.com/122106284151167745/posts/122106292791167745
-2026-04-08 16:20:47 [ERROR] Erro comentßrio detalhado: {'error': {'message': '(#200) You do not have sufficient permissions to perform this action', 'type': 'OAuthException', 'code': 200, 'fbtrace_id': 'AZwy0LKaGPjvXnYRia042UU'}}
-2026-04-08 16:20:47 [ERROR] \U0001f4a1 DICA: O App precisa de 'Acesso Avanþado' na permissÒo 'pages_manage_engagement'.

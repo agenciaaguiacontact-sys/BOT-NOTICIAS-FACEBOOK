@@ -1,8 +1,0 @@
-2026-04-08 14:54:41 [INFO] Bot Iniciado.
-2026-04-08 14:54:42 [INFO] Acessando login...
-2026-04-08 14:54:44 [INFO] Navegando para notÝcias...
-2026-04-08 14:55:23 [INFO] Processando: Iza reflete sobre ter reatado com Yuri Lima ap¾s traiþÒo: Qualquer um estß sujeito
-2026-04-08 14:55:37 [INFO] \u2713 PUBLICADO! ID: 1021302557732355_122106285471167745
-2026-04-08 14:55:46 [INFO] LINK: https://www.facebook.com/122106284151167745/posts/122106285471167745
-2026-04-08 14:55:46 [INFO] Comentßrio status: 403
-2026-04-08 14:55:46 [ERROR] Erro comentßrio detalhado: {'error': {'message': '(#200) You do not have sufficient permissions to perform this action', 'type': 'OAuthException', 'code': 200, 'fbtrace_id': 'AGSvXuJP9CWRHbfzr56owMI'}}
