@@ -245,7 +245,18 @@ def get_noticias():
             page.wait_for_url("**/dashboard**", timeout=40000)
             page.goto(SFY_SHARE)
             page.wait_for_timeout(7000)
-            for card in page.locator(".card").all():
+
+            log.info("Selecionando bloco Sharesforyou...")
+            try:
+                page.click("button.change-order-by:has-text('Sharesforyou')", timeout=15000)
+                page.wait_for_timeout(10000) # Aumentado para 10s para garantir carregamento
+            except Exception as e:
+                log.warning(f"Não foi possível clicar no botão Sharesforyou (pode já estar selecionado): {e}")
+
+            cards = page.locator(".card").all()
+            log.info(f"Encontrados {len(cards)} cards no bloco Sharesforyou.")
+            
+            for card in cards:
                 try:
                     title = card.locator("h5, p.fs-4").first.inner_text().strip()
                     link = card.locator("a:has(i.ti-eye)").first.get_attribute("href")
@@ -279,9 +290,13 @@ def main():
     if not news: return
     
     for n in news:
-        if n["id"] in posted: continue
+        if n["id"] in posted:
+            log.info(f"⏭️ Pulando: {n['title'][:50]}... (Já postado)")
+            continue
         try:
-            if not n["img"]: continue
+            if not n["img"]:
+                log.warning(f"⚠️ Pulando: {n['title'][:50]}... (Sem imagem)")
+                continue
             r = session.get(n["img"], timeout=15)
             if r.status_code != 200: continue
             

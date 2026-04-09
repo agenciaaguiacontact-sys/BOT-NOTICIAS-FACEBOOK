@@ -45,6 +45,24 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 }
 
+def verificar_alvo_seguro(page_id, token):
+    """Verifica se o nome da página alvo é exatamente 'Aconteceu Hoje' antes de prosseguir."""
+    log.info(f"🛡️ Verificando segurança do alvo: {page_id}")
+    url = f"{FB_GRAPH}/{page_id}?fields=name&access_token={token}"
+    try:
+        r = requests.get(url, timeout=10)
+        data = r.json()
+        nome = data.get("name", "").strip()
+        if nome == "Aconteceu Hoje":
+            log.info(f"✅ Alvo Confirmado: {nome}")
+            return True
+        else:
+            log.critical(f"🛑 SEGURANÇA: O alvo configurado ({nome}) não é 'Aconteceu Hoje'!")
+            return False
+    except Exception as e:
+        log.error(f"❌ Erro ao validar alvo: {e}")
+        return False
+
 def make_session():
     s = requests.Session()
     s.headers.update(HEADERS)
@@ -62,7 +80,9 @@ def save_posted(ids):
     json.dump(sorted(list(ids))[-500:], open(POSTED_FILE, "w"), indent=2)
 
 def make_article_id(url):
-    return hashlib.sha256(url.encode()).hexdigest()[:16]
+    # Remove query strings para evitar duplicatas por parâmetros de rastreio
+    clean_url = url.split("?")[0].split("#")[0]
+    return hashlib.sha256(clean_url.encode()).hexdigest()[:16]
 
 def load_last_title():
     if os.path.exists("last_title.txt"):
@@ -93,40 +113,73 @@ def limpar_emojis(texto):
     return re.sub(r'[^\w\s.,!?;:\"\'\(\)\-\u00C0-\u00FF]+', '', texto).strip()
 
 def gerar_gancho(title):
-    if not GEMINI_KEY: return "REVELAÇÃO CHOCANTE! 😱"
+    default_res = {"hook": "REVELAÇÃO CHOCANTE!", "tag": "NOTÍCIA URGENTE", "color": (255, 0, 0, 200), "emoji": "1f6a8"}
+    if not GEMINI_KEY: return default_res
+    
     last_t = load_last_title()
     
+    # Mapeamento de Categorias, Cores e Tags
+    CATEGORIES = {
+        "URGENTE": {"tag": "NOTÍCIA URGENTE", "color": (255, 0, 0, 200)},
+        "POLITICA": {"tag": "NA POLÍTICA", "color": (0, 102, 255, 200)},
+        "ESPORTE": {"tag": "NO ESPORTE", "color": (50, 205, 50, 200)},
+        "FOFOCA": {"tag": "VOCÊ NÃO VAI ACREDITAR", "color": (255, 215, 0, 200)},
+        "CRIME": {"tag": "CRIME AGORA", "color": (0, 0, 0, 200)},
+    }
+    
+    EMOJI_HEX = {
+        "🚨": "1f6a8", "💀": "1f480", "🔥": "1f525", "💣": "1f4a3", "⚠️": "26a0", 
+        "😱": "1f631", "👀": "1f440", "📢": "1f4e2", "💰": "1f4b0", "🚔": "1f694",
+        "⚽": "26bd", "🎭": "1f3ad", "🤐": "1f910"
+    }
+
     for attempt in range(3):
         try:
             url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
             prompt = (
-                f"Como um mestre de clickbait sensacionalista brasileiro, crie um título EXTREMAMENTE CURTO (MÁXIMO 3 PALAVRAS). "
-                f"O título DEVE ser relacionado à notícia: \"{title}\". "
-                f"Use UM emoji impactante no final (ex: 😱, 💀, 🔥). Ex: REVELAÇÃO CHOCANTE! 😱. "
-                f"Título em MAIÚSCULAS. Não repita: \"{last_t}\"."
+                f"Analise a notícia: \"{title}\".\n"
+                f"Atue como um editor de notícias sensacionalista de alto impacto.\n"
+                f"Retorne APENAS uma linha no formato: HOOK | CATEGORY | EMOJI\n"
+                f"- HOOK: Título EXTREMAMENTE CURTO (MÁXIMO 3 PALAVRAS) em MAIÚSCULAS.\n"
+                f"  IMPORTANTE: CAMUFLE palavras sensíveis trocando letras por números/símbolos.\n"
+                f"  Ex: MORTE -> M0RT3, ESTUPRO -> 3STUPR0, SANGUE -> S@NGU3, MATOU -> M@T0U, TIRO -> T1R0.\n"
+                f"- CATEGORY: Escolha exatamente uma: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
+                f"- EMOJI: UM único emoji que combine com o tema.\n"
+                f"Não repita o último título: \"{last_t}\"."
             )
             payload = {"contents":[{"parts":[{"text":prompt}]}]}
             r = requests.post(url, json=payload, timeout=15)
             r.raise_for_status()
-            res = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip().upper().replace('"', '')
+            raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
             
-            # Garante que não é idêntico ao último
-            if res != last_t:
-                save_last_title(res)
-                return res
+            if "|" in raw:
+                parts = [p.strip() for p in raw.split("|")]
+                if len(parts) >= 3:
+                    hook = parts[0].replace('"', '').upper()
+                    cat_key = parts[1].upper()
+                    emoji_char = parts[2]
+                    
+                    if hook != last_t:
+                        save_last_title(hook)
+                        config = CATEGORIES.get(cat_key, CATEGORIES["URGENTE"])
+                        emoji_hex = EMOJI_HEX.get(emoji_char, "1f525") 
+                        return {
+                            "hook": hook, 
+                            "tag": config["tag"],
+                            "color": config["color"], 
+                            "emoji": emoji_hex
+                        }
         except Exception as e:
             log.warning(f"Erro Gemini (tentativa {attempt}): {e}")
             
-    return "MUITO IMPACTANTE! 😱"
+    return default_res
 
-def adicionar_texto_premium(img_bytes, texto):
-    # Paleta de Cores Noticiário
-    PALETTES = [
-        (220, 20, 60, 170),   # Vermelho Alerta
-        (0, 51, 153, 170),    # Azul Marinho News
-        (15, 15, 15, 170),    # Preto Profundo
-    ]
-    MAIN_COLOR = random.choice(PALETTES)
+def adicionar_texto_premium(img_bytes, dados_esteticos):
+    # dados_esteticos = {"hook": "...", "tag": "...", "color": (R,G,B,A), "emoji": "hex_code"}
+    MAIN_COLOR = dados_esteticos["color"]
+    texto = dados_esteticos["hook"]
+    tag_texto = dados_esteticos["tag"]
+    emoji_hex = dados_esteticos["emoji"]
 
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
     w, h = img.size
@@ -162,17 +215,17 @@ def adicionar_texto_premium(img_bytes, texto):
     
     font_path = baixar_fonte()
     
-    # 3. Selo URGENTE Premium
+    # 3. Selo Dinâmico Premium
     badge_h = int(bh * 0.05)
     f_badge = ImageFont.truetype(font_path, int(badge_h * 0.75)) if font_path else ImageFont.load_default()
-    txt_badge = "NOTÍCIA URGENTE"
+    txt_badge = tag_texto
     bbox_b = draw_hd.textbbox((0,0), txt_badge, font=f_badge)
     badge_w = (bbox_b[2] - bbox_b[0]) + (40 * sf)
     
     # Selo Centralizado
     bx1, by1 = 30*sf, 40*sf
     bx2, by2 = bx1 + badge_w, by1 + badge_h
-    draw_hd.rectangle([bx1, by1, bx2, by2], fill=(220, 20, 60, 255))
+    draw_hd.rectangle([bx1, by1, bx2, by2], fill=MAIN_COLOR)
     draw_hd.text(((bx1 + bx2)//2, (by1 + by2)//2), txt_badge, font=f_badge, fill=(255, 255, 255), anchor="mm")
 
     texto_puro = limpar_emojis(texto)
@@ -219,13 +272,8 @@ def adicionar_texto_premium(img_bytes, texto):
     draw_hd.text((cx, cy), l, font=font, fill=(255, 255, 255), anchor="mm")
         
     # 7. Ícone PREMIUM (Centralizado)
-    icons = ["🚨", "💀", "🔥", "💣", "⚠️"]
-    char = random.choice(icons)
-    EMOJI_MAP = {"🚨": "1f6a8", "💀": "1f480", "🔥": "1f525", "💣": "1f4a3", "⚠️": "26a0"}
-    hex_code = EMOJI_MAP.get(char, "1f480")
-    emoji_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{hex_code}.png"
-    
     try:
+        emoji_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{emoji_hex}.png"
         r_emoji = requests.get(emoji_url, timeout=10)
         if r_emoji.status_code == 200:
             emoji_img = Image.open(BytesIO(r_emoji.content)).convert("RGBA")
@@ -240,7 +288,8 @@ def adicionar_texto_premium(img_bytes, texto):
             e_shadow = e_shadow.filter(ImageFilter.GaussianBlur(radius=8*sf))
             img_hd = Image.alpha_composite(img_hd, e_shadow)
             img_hd.paste(emoji_img, (ix, iy), emoji_img)
-    except: pass
+    except Exception as e:
+        log.warning(f"Erro ao carregar emoji: {e}")
 
     # 8. CTA Dinâmico (Sombra projetada)
     f_sub_size = int(badge_h * 0.75)
@@ -278,7 +327,18 @@ def get_noticias():
             page.wait_for_url("**/dashboard**", timeout=40000)
             page.goto(SFY_SHARE)
             page.wait_for_timeout(7000)
-            for card in page.locator(".card").all():
+            
+            log.info("Selecionando bloco Sharesforyou...")
+            try:
+                page.click("button.change-order-by:has-text('Sharesforyou')", timeout=15000)
+                page.wait_for_timeout(10000) # Aumentado para 10s para garantir carregamento
+            except Exception as e:
+                log.warning(f"Não foi possível clicar no botão Sharesforyou (pode já estar selecionado): {e}")
+
+            cards = page.locator(".card").all()
+            log.info(f"Encontrados {len(cards)} cards no bloco Sharesforyou.")
+            
+            for card in cards:
                 try:
                     title = card.locator("h5, p.fs-4").first.inner_text().strip()
                     link = card.locator("a:has(i.ti-eye)").first.get_attribute("href")
@@ -295,16 +355,20 @@ def get_noticias():
 def main():
     log.info("Bot Profissional Notícias Iniciado.")
     
-    # 0. Tentativa de Renovação Automática do Token
     try:
         from auth_manager import auto_renew_meta_token
         auto_renew_meta_token()
-        # Recarrega variáveis após possível renovação
-        load_dotenv(override=True)
-        global FB_TOKEN
-        FB_TOKEN = os.environ.get("FB_TOKEN", FB_TOKEN)
     except Exception as e:
         log.warning(f"Aviso: Não foi possível processar renovação automática: {e}")
+
+    load_dotenv(override=True)
+    FB_PAGE_ID = os.environ.get("FB_PAGE_ID", "")
+    FB_TOKEN = os.environ.get("FB_TOKEN", "")
+
+    # Trava de Segurança Obligatória
+    if not verificar_alvo_seguro(FB_PAGE_ID, FB_TOKEN):
+        log.error("Encerrando bot por falta de segurança no alvo de postagem.")
+        return
 
     posted = load_posted()
     session = make_session()
@@ -312,14 +376,18 @@ def main():
     if not news: return
     
     for n in news:
-        if n["id"] in posted: continue
+        if n["id"] in posted:
+            log.info(f"⏭️ Pulando: {n['title'][:50]}... (Já postado)")
+            continue
         try:
-            if not n["img"]: continue
+            if not n["img"]:
+                log.warning(f"⚠️ Pulando: {n['title'][:50]}... (Sem imagem)")
+                continue
             r = session.get(n["img"], timeout=15)
             if r.status_code != 200: continue
             
-            hook = gerar_gancho(n["title"])
-            img_b = adicionar_texto_premium(r.content, hook)
+            estetica = gerar_gancho(n["title"])
+            img_b = adicionar_texto_premium(r.content, estetica)
             
             padding = "\n.\n.\n.\n.\n.\n"
             msg = f"😱 {n['title'].upper()} 😱\n\nNotícia urgente! Veja os detalhes chocantes agora... 💣🔥\n{padding}🔗 LINK: {n['link']}"

@@ -31,6 +31,13 @@ def get_noticias():
             page.goto(SFY_SHARE)
             page.wait_for_timeout(7000)
             
+            log.info("Selecionando bloco Sharesforyou...")
+            try:
+                page.click("button.change-order-by:has-text('Sharesforyou')", timeout=10000)
+                page.wait_for_timeout(5000)
+            except Exception as e:
+                log.warning(f"Não foi possível clicar no botão Sharesforyou: {e}")
+            
             cards = page.locator(".card").all()
             log.info(f"Encontrados {len(cards)} cards.")
             for card in cards:
