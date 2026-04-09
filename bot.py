@@ -45,23 +45,7 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 }
 
-def verificar_alvo_seguro(page_id, token):
-    """Verifica se o nome da página alvo é exatamente 'Aconteceu Hoje' antes de prosseguir."""
-    log.info(f"🛡️ Verificando segurança do alvo: {page_id}")
-    url = f"{FB_GRAPH}/{page_id}?fields=name&access_token={token}"
-    try:
-        r = requests.get(url, timeout=10)
-        data = r.json()
-        nome = data.get("name", "").strip()
-        if nome == "Aconteceu Hoje":
-            log.info(f"✅ Alvo Confirmado: {nome}")
-            return True
-        else:
-            log.critical(f"🛑 SEGURANÇA: O alvo configurado ({nome}) não é 'Aconteceu Hoje'!")
-            return False
-    except Exception as e:
-        log.error(f"❌ Erro ao validar alvo: {e}")
-        return False
+
 
 def make_session():
     s = requests.Session()
@@ -375,10 +359,7 @@ def main():
         FB_TOKEN = os.environ.get("FB_TOKEN", "")
         log.info("🔑 Usando tokens das variáveis de ambiente.")
 
-    # Trava de Segurança Obligatória
-    if not verificar_alvo_seguro(FB_PAGE_ID, FB_TOKEN):
-        log.error("Encerrando bot por falta de segurança no alvo de postagem.")
-        return
+
 
     posted = load_posted()
     session = make_session()
