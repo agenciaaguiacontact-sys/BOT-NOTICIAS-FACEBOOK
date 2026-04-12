@@ -1,0 +1,27 @@
+INFO:__main__:Acessando SFY...
+INFO:__main__:Logado. Indo para Share...
+INFO:__main__:Selecionando bloco Sharesforyou...
+INFO:__main__:Encontrados 17 cards.
+ERROR:__main__:Erro no card: Locator.inner_text: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator(".card").first.locator("h5, p.fs-4").first
+
+INFO:__main__:NotÝcia capturada: Robert Pattinson revela se gosta da pr¾pria atuaþÒo em Crep·sculo
+INFO:__main__:NotÝcia capturada: MisÚria Tem SoluþÒo: CNN vence categoria de voto popular em premiaþÒo
+INFO:__main__:NotÝcia capturada: "Heranþa em Jogo": como serß reality de Rodrigo Faro no Globoplay?
+INFO:__main__:NotÝcia capturada: Dois homens soltam rojÒo em ¶nibus e sÒo presos: veja o vÝdeo
+INFO:__main__:NotÝcia capturada: Casa Branca diz que IrÒ nÒo pode mais distribuir armas para grupos aliados
+INFO:__main__:NotÝcia capturada: BBB 26: Ana Paula admite decepþÒo com mudanþa em p¾dio de Milena
+INFO:__main__:NotÝcia capturada: Carolina Ferraz deixa o comando do "Domingo Espetacular", na Record; saiba
+INFO:__main__:NotÝcia capturada: CÒo Hulk ajudou a encontrar 48 toneladas de drogas no Complexo da MarÚ (RJ)
+INFO:__main__:NotÝcia capturada: Sonny Clay Dutra Ú transferido para unidade prisional federal no MS
+INFO:__main__:NotÝcia capturada: Macron condena ataques ôindiscriminadosö de Israel contra o LÝbano
+INFO:__main__:NotÝcia capturada: PrÚ-inscriþ§es para o BBB 27 comeþam no "BBB Experience" em SÒo Paulo
+INFO:__main__:NotÝcia capturada: Lore Improta revela o quanto jß engordou na gravidez do segundo filho, Levi
+INFO:__main__:NotÝcia capturada: Nem Palmeiras, nem Flamengo: Veja os clubes que estÒo invictos na temporada
+INFO:__main__:NotÝcia capturada: Ex-BBB Chaiany Andrade Ú barrada ao tentar entrar na Globo
+INFO:__main__:NotÝcia capturada: Locais sagrados de JerusalÚm serÒo reabertos nesta quinta-feira (9)
+INFO:__main__:NotÝcia capturada: Pedro Lourenþo revela tentativa com Ýdolo do Cruzeiro: "Faþo questÒo"
+
+Total: 16
+Primeira: {'id': '03d29ca63ea1f381', 'title': 'Robert Pattinson revela se gosta da pr¾pria atuaþÒo em Crep·sculo', 'link': 'https://noticializandoagora.com/2026/04/09/robert-pattinson-revela-se-gosta-da-propria-atuacao-em-crepusculo/?utm_campaign=2191&utm_medium=42710733&utm_term=1&utm_source=8482b05fae96c', 'img': 'https://cdn.sharesforyou.com/uploads/domain-article/69d6fbb9c9c81.webp'}

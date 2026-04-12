@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-FB_PAGE_ID = os.environ.get("FB_PAGE_ID")
+FB_PAGE_ID = "1021302557732355"
 FB_TOKEN = os.environ.get("FB_TOKEN")
 
 url = f"https://graph.facebook.com/v22.0/{FB_PAGE_ID}?fields=name&access_token={FB_TOKEN}"
