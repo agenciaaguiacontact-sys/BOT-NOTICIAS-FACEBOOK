@@ -97,7 +97,7 @@ def limpar_emojis(texto):
     return re.sub(r'[^\w\s.,!?;:\"\'\(\)\-\u00C0-\u00FF]+', '', texto).strip()
 
 def gerar_gancho(title):
-    default_res = {"hook": "REVELAÇÃO CHOCANTE!", "tag": "NOTÍCIA URGENTE", "color": (255, 0, 0, 200), "emoji": "1f6a8"}
+    default_res = {"hook": "REVELAÇÃO CHOCANTE!", "tag": "NOTÍCIA URGENTE", "color": (255, 0, 0, 200), "emoji": "1f6a8", "hashtags": "#noticias #urgente"}
     if not GEMINI_KEY: return default_res
     
     last_t = load_last_title()
@@ -123,7 +123,7 @@ def gerar_gancho(title):
             prompt = (
                 f"Analise a notícia: \"{title}\".\n"
                 f"Atue como um editor de notícias sensacionalista de alto impacto.\n"
-                f"Retorne APENAS uma linha no formato: HOOK | CATEGORY | EMOJI\n"
+                f"Retorne APENAS uma linha no formato: HOOK | CATEGORY | EMOJI | HASHTAGS\n"
                 f"- HOOK: Título EXTREMAMENTE CURTO (MÁXIMO 3 PALAVRAS) em MAIÚSCULAS.\n"
                 f"  REGRA DE CAMUFLAGEM: substitua letras por numeros/simbolos SOMENTE se o HOOK\n"
                 f"  contiver EXATAMENTE uma destas palavras proibidas:\n"
@@ -136,6 +136,7 @@ def gerar_gancho(title):
                 f"  VENCE, GANHA, REVELA, FLAGRA, CHOCA, SURPREENDE, BRIGA, CRISE, e qualquer outra.\n"
                 f"- CATEGORY: Escolha exatamente uma: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
                 f"- EMOJI: UM único emoji que combine com o tema.\n"
+                f"- HASHTAGS: Liste de 3 a 5 hashtags de SEO separadas por espaço (ex: #Noticia #Brasil #Urgente).\n"
                 f"Não repita o último título: \"{last_t}\"."
             )
             payload = {"contents":[{"parts":[{"text":prompt}]}]}
@@ -149,6 +150,7 @@ def gerar_gancho(title):
                     hook = parts[0].replace('"', '').upper()
                     cat_key = parts[1].upper()
                     emoji_char = parts[2]
+                    hashtags = parts[3] if len(parts) >= 4 else "#Noticias #Brasil #Urgente"
                     
                     if hook != last_t:
                         save_last_title(hook)
@@ -158,7 +160,8 @@ def gerar_gancho(title):
                             "hook": hook, 
                             "tag": config["tag"],
                             "color": config["color"], 
-                            "emoji": emoji_hex
+                            "emoji": emoji_hex,
+                            "hashtags": hashtags
                         }
         except Exception as e:
             log.warning(f"Erro Gemini (tentativa {attempt}): {e}")
@@ -399,7 +402,8 @@ def main():
             img_b = adicionar_texto_premium(img_data, estetica)
             
             padding = "\n.\n.\n.\n.\n.\n"
-            msg = f"😱 {n['title'].upper()} 😱\n\nNotícia urgente! Veja os detalhes chocantes agora... 💣🔥\n{padding}🔗 LINK: {n['link']}"
+            hashtags = estetica.get("hashtags", "#noticias #brasil")
+            msg = f"😱 {n['title'].upper()} 😱\n\nNotícia urgente! Veja os detalhes chocantes agora... 💣🔥\n\n{hashtags}{padding}🔗 LINK: {n['link']}"
             
             r_fb = requests.post(
                 f"{FB_GRAPH}/{FB_PAGE_ID}/photos",
