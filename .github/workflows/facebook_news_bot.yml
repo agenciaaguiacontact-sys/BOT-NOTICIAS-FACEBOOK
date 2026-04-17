@@ -1,9 +1,11 @@
 name: 🤖 Bot Notícias Facebook
 
 on:
-  schedule:
-    - cron: '*/10 * * * *'  # A cada 10 minutos (pode ter atraso de até 1h no GitHub)
-  workflow_dispatch:          # Permite rodar manualmente pelo painel do GitHub
+  workflow_dispatch:          # Permite rodar manualmente pelo painel do GitHub (e via Script Google)
+
+concurrency:
+  group: bot-facebook-news
+  cancel-in-progress: false   # Não cancela o atual, mas evita múltiplos simultâneos se a fila estiver grande
 
 jobs:
   run-bot:
