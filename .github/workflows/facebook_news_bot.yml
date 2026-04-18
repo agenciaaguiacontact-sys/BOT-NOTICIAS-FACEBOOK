@@ -39,7 +39,12 @@ jobs:
           FB_APP_SECRET:  ${{ secrets.FB_APP_SECRET }}
           FB_USER_TOKEN:  ${{ secrets.FB_USER_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python bot.py
+        run: |
+          # Garante que temos a versão mais recente do main antes de rodar
+          git config pull.rebase true
+          git branch --set-upstream-to=origin/main main || true
+          git pull origin main || true
+          python bot.py
 
       - name: 💾 Salvar estado de posts publicados
         run: |
@@ -52,5 +57,7 @@ jobs:
             echo "ℹ️ Nenhuma mudança de estado para salvar."
           else
             git commit -m "chore: atualizar estado do bot [skip ci]"
-            git push
+            # Puxa atualizações antes de empurrar para evitar conflitos de rebase
+            git pull --rebase origin main || true
+            git push origin HEAD:main
           fi
