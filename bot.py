@@ -63,10 +63,13 @@ def load_posted():
 def save_posted(ids):
     json.dump(sorted(list(ids))[-500:], open(POSTED_FILE, "w"), indent=2)
 
-def make_article_id(url):
+def make_article_id(url, title=""):
     # Remove query strings para evitar duplicatas por parâmetros de rastreio
     clean_url = url.split("?")[0].split("#")[0]
-    return hashlib.sha256(clean_url.encode()).hexdigest()[:16]
+    # Normaliza o título para incluir no hash (evita duplicatas se a URL mudar mas o título for igual)
+    title_norm = re.sub(r'[^\w]', '', title.lower())
+    combined = f"{clean_url}|{title_norm}"
+    return hashlib.sha256(combined.encode()).hexdigest()[:16]
 
 def load_last_title():
     if os.path.exists("last_title.txt"):
@@ -96,15 +99,18 @@ def limpar_emojis(texto):
     # Preserva caracteres acentuados e pontuação, removendo apenas o que não é texto 'humano'
     return re.sub(r'[^\w\s.,!?;:\"\'\(\)\-\u00C0-\u00FF]+', '', texto).strip()
 
-# Mapeamento de emojis de reação do Facebook por categoria
-# Cada lista contém tuplas (emoji_hex, label) — máximo 3 por categoria
-REACTION_EMOJIS_BY_CATEGORY = {
-    "URGENTE":  [("1f631", "Absurdo!"),   ("1f622", "Que triste"),  ("1f621", "Indignado")],
-    "POLITICA": [("1f44d", "Concordo"),   ("2764-fe0f",  "Apoio"),   ("1f62e", "Chocante")],
-    "ESPORTE":  [("1f44d", "Top demais!"), ("1f606", "Haha"),        ("1f62e", "Incrível")],
-    "FOFOCA":   [("1f606", "Inacreditável"),("2764-fe0f", "Amei"),    ("1f62e", "Nossa!")],
-    "CRIME":    [], # Sem emojis para crimes (limitação ética/visual)
-}
+def emoji_to_hex(emoji_char):
+    """Converte um caractere emoji para sua representação hexadecimal (iamcal style)."""
+    if not emoji_char: return None
+    try:
+        hex_parts = []
+        for char in emoji_char:
+            h = f"{ord(char):x}"
+            if h != "fe0f": # Remove variation selector
+                hex_parts.append(h)
+        return "-".join(hex_parts)
+    except:
+        return None
 
 def gerar_gancho(title):
     default_res = {
@@ -141,20 +147,19 @@ def gerar_gancho(title):
             prompt = (
                 f"Analise a notícia: \"{title}\".\n"
                 f"Atue como um editor de notícias sensacionalista de alto impacto.\n"
-                f"Retorne APENAS uma linha no formato: HOOK | CATEGORY | EMOJI | HASHTAGS\n"
+                f"Retorne APENAS uma linha no formato: HOOK | CATEGORY | EMOJI | HASHTAGS | REACTION_DATA\n"
                 f"- HOOK: Título EXTREMAMENTE CURTO (MÁXIMO 3 PALAVRAS) em MAIÚSCULAS.\n"
                 f"  REGRA DE CAMUFLAGEM: substitua letras por numeros/simbolos SOMENTE se o HOOK\n"
                 f"  contiver EXATAMENTE uma destas palavras proibidas:\n"
                 f"  MORTE, MORTO, MORREU, MATAR, MATOU, MATARAM, ASSASSINOU, ASSASSINATO,\n"
                 f"  ESPANCOU, SANGUE, TIRO, TIROS, BALEADO, ESTUPRO, ESTUPROU, ABUSO,\n"
                 f"  TRAFICO, DROGA, DROGAS, COCAINA, CRACK.\n"
-                f"  Exemplos CORRETOS: MORTE->M0RT3, MATOU->M@T0U, TIRO->T1R0, SANGUE->S@NGU3, ESTUPRO->3STUPR0.\n"
-                f"  PROIBIDO substituir letras em qualquer outra palavra. Exemplos INTACTOS:\n"
-                f"  BALE, INSANO, INVASAO, COPA, TREINO, BRASIL, POLICIA, ACIDENTE, ESPORTE,\n"
-                f"  VENCE, GANHA, REVELA, FLAGRA, CHOCA, SURPREENDE, BRIGA, CRISE, e qualquer outra.\n"
-                f"- CATEGORY: Escolha exatamente uma: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
-                f"- EMOJI: UM único emoji que combine com o tema.\n"
-                f"- HASHTAGS: Liste de 3 a 5 hashtags de SEO separadas por espaço, TODAS EM MINÚSCULAS (ex: #noticias #brasil #urgente).\n"
+                f"  Exemplos: M0RT3, M@T0U, T1R0, S@NGU3, 3STUPR0.\n"
+                f"- CATEGORY: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
+                f"- EMOJI: UM emoji para o tema.\n"
+                f"- HASHTAGS: 3 a 5 hashtags (ex: #noticias #brasil).\n"
+                f"- REACTION_DATA: 3 reações curtas no formato E1:TEXTO1,E2:TEXTO2,E3:TEXTO3\n"
+                f"  Ex: 😱:Absurdo!,😢:Que triste,🙌:Justiça!\n"
                 f"Não repita o último título: \"{last_t}\"."
             )
             payload = {"contents":[{"parts":[{"text":prompt}]}]}
@@ -164,18 +169,26 @@ def gerar_gancho(title):
             
             if "|" in raw:
                 parts = [p.strip() for p in raw.split("|")]
-                if len(parts) >= 3:
+                if len(parts) >= 5:
                     hook = parts[0].replace('"', '').upper()
                     cat_key = parts[1].upper()
                     emoji_char = parts[2]
-                    hashtags_raw = parts[3] if len(parts) >= 4 else "#noticias #brasil #urgente"
-                    hashtags = hashtags_raw.lower()
+                    hashtags = parts[3].lower()
+                    react_raw = parts[4]
+                    
+                    # Parse dynamic reactions
+                    reactions = []
+                    for r_item in react_raw.split(","):
+                        if ":" in r_item:
+                            e_char, r_text = r_item.split(":", 1)
+                            e_hex = emoji_to_hex(e_char.strip())
+                            if e_hex:
+                                reactions.append((e_hex, r_text.strip()))
                     
                     if hook != last_t:
                         save_last_title(hook)
                         config = CATEGORIES.get(cat_key, CATEGORIES["URGENTE"])
-                        emoji_hex = EMOJI_HEX.get(emoji_char, "1f525")
-                        reactions = REACTION_EMOJIS_BY_CATEGORY.get(cat_key, REACTION_EMOJIS_BY_CATEGORY["URGENTE"])
+                        emoji_hex = emoji_to_hex(emoji_char) or "1f525"
                         return {
                             "hook": hook, 
                             "tag": config["tag"],
@@ -183,7 +196,7 @@ def gerar_gancho(title):
                             "emoji": emoji_hex,
                             "hashtags": hashtags,
                             "category": cat_key,
-                            "reactions": reactions
+                            "reactions": reactions[:3]
                         }
         except Exception as e:
             log.warning(f"Erro Gemini (tentativa {attempt}): {e}")
@@ -335,48 +348,50 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
     # 7. Emojis de Reação (Opinião ao lado direito)
     if reactions:
         # Posição: um pouco abaixo do título, dentro do quadrado 1:1
-        react_y = ty2 + int(55 * sf)
-        r_emoji_size = int(f_size * 0.51) 
-        f_react_size = int(badge_h * 0.48)
+        render_y = ty2 + int(60 * sf)
+        r_emoji_size = int(bh * 0.05) 
+        f_react_size = int(bh * 0.025)
         f_react = ImageFont.truetype(font_path, f_react_size) if font_path else ImageFont.load_default()
 
-        # Calcular largura total do bloco de reações
-        gap_entre_blocos = int(35 * sf)
-        espacinho = int(12 * sf)
-        total_w = 0
-        blocos = []
+        # Calcular largura total
+        gap = int(40 * sf)
+        sp = int(10 * sf)
+        items = []
+        tot_w = 0
         
-        for (r_hex, r_label) in reactions:
-            lbb = draw_core.textbbox((0, 0), r_label, font=f_react)
+        for (r_hex, r_text) in reactions:
+            lbb = draw_core.textbbox((0, 0), r_text, font=f_react)
             lw_r = lbb[2] - lbb[0]
-            bloco_w = r_emoji_size + espacinho + lw_r
-            blocos.append({"hex": r_hex, "label": r_label, "w": bloco_w, "text_w": lw_r})
-            total_w += bloco_w
+            item_w = r_emoji_size + sp + lw_r
+            items.append({"hex": r_hex, "text": r_text, "w": item_w})
+            tot_w += item_w
         
-        total_w += gap_entre_blocos * (len(reactions) - 1)
-        rx = (bw - total_w) // 2
+        tot_w += gap * (len(reactions) - 1)
+        rx = (bw - tot_w) // 2
 
-        for b in blocos:
+        for item in items:
             try:
-                r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-facebook-96/{b['hex']}.png"
-                r_resp = requests.get(r_url, timeout=10)
-                if r_resp.status_code != 200:
-                    r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{b['hex']}.png"
-                    r_resp = requests.get(r_url, timeout=10)
+                # Tentar Facebook style primeiro, fallback para Apple
+                r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-facebook-96/{item['hex']}.png"
+                r_res = requests.get(r_url, timeout=5)
+                if r_res.status_code != 200:
+                    r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{item['hex']}.png"
+                    r_res = requests.get(r_url, timeout=5)
                 
-                if r_resp.status_code == 200:
-                    ri = Image.open(BytesIO(r_resp.content)).convert("RGBA")
+                if r_res.status_code == 200:
+                    ri = Image.open(BytesIO(r_res.content)).convert("RGBA")
                     ri = ri.resize((r_emoji_size, r_emoji_size), Image.Resampling.LANCZOS)
-                    img_core.paste(ri, (rx, react_y), ri)
+                    img_core.paste(ri, (rx, render_y), ri)
                     
-                    tx_pos = rx + r_emoji_size + espacinho
-                    ty_pos = react_y + (r_emoji_size // 2)
-                    draw_core = ImageDraw.Draw(img_core)
-                    draw_core.text((tx_pos + 1*sf, ty_pos + 1*sf), b["label"], font=f_react, fill=(0, 0, 0, 180), anchor="lm")
-                    draw_core.text((tx_pos, ty_pos), b["label"], font=f_react, fill=(255, 255, 255), anchor="lm")
+                    tx_p = rx + r_emoji_size + sp
+                    ty_p = render_y + (r_emoji_size // 2)
                     
-                    rx += b["w"] + gap_entre_blocos
-            except: pass
+                    draw_core.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 180), anchor="lm")
+                    draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
+                    
+                    rx += item["w"] + gap
+            except Exception as e:
+                log.warning(f"Erro ao renderizar reação {item['hex']}: {e}")
 
     # --- FINALIZAÇÃO: REDUÇÃO PARA 1080x1080 PADRÃO ---
     final_img = img_core.resize((base_side, base_side), Image.Resampling.LANCZOS).convert("RGB")
@@ -420,20 +435,7 @@ def get_noticias():
                         if link.startswith("/"): link = "https://www.sharesforyou.com" + link
                         if img and img.startswith("/"): img = "https://www.sharesforyou.com" + img
                         
-                        # FIX 403: baixar imagem dentro da sessão autenticada do Playwright
-                        img_bytes = None
-                        if img:
-                            try:
-                                resp = page.request.get(img)
-                                if resp.status == 200:
-                                    img_bytes = resp.body()
-                                    log.info(f"🖼️ Imagem baixada via Playwright ({len(img_bytes)//1024}KB)")
-                                else:
-                                    log.warning(f"⚠️ Status imagem: {resp.status} para {img}")
-                            except Exception as e_img:
-                                log.warning(f"⚠️ Erro baixando imagem via Playwright: {e_img}")
-                        
-                        res.append({"id": make_article_id(link), "title": title, "link": link, "img": img, "img_bytes": img_bytes})
+                        res.append({"id": make_article_id(link, title), "title": title, "link": link, "img": img})
                 except: continue
         except Exception as e: log.error(f"Erro Playwright: {e}")
         finally: browser.close()
@@ -460,24 +462,37 @@ def main():
         log.warning("Nenhuma notícia encontrada.")
         return
     
-    for n in news:
-        if n["id"] in posted:
-            log.info(f"⏭️ Pulando: {n['title'][:50]}... (Já postado)")
-            continue
+    # Filtra apenas o que não foi postado
+    new_news = [n for n in news if n["id"] not in posted]
+    
+    if not new_news:
+        log.info("📢 Nenhuma notícia nova para postar. Encerrando para evitar repetição.")
+        return
+    
+    log.info(f"🆕 Encontradas {len(new_news)} notícias inéditas. Tentando postar a primeira...")
+
+    for n in new_news:
         try:
-            # Usar bytes baixados via Playwright (evita 403) ou fallback por URL
-            img_data = n.get("img_bytes")
-            if img_data is None:
-                if not n.get("img"):
-                    log.warning(f"⚠️ Sem imagem para: {n['title'][:50]}")
-                    continue
-                r_img = requests.get(n["img"], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
-                if r_img.status_code != 200:
-                    log.warning(f"⚠️ Imagem retornou {r_img.status_code}, pulando.")
-                    continue
-                img_data = r_img.content
+            # Baixar imagem apenas agora (economiza banda e tempo)
+            if not n.get("img"):
+                log.warning(f"⚠️ Sem imagem para: {n['title'][:50]}")
+                continue
+                
+            log.info(f"📥 Baixando imagem: {n['img'][:60]}...")
+            r_img = requests.get(n["img"], headers={"User-Agent": HEADERS["User-Agent"]}, timeout=20)
+            if r_img.status_code != 200:
+                log.warning(f"⚠️ Imagem retornou {r_img.status_code}, pulando.")
+                continue
+            img_data = r_img.content
             
             estetica = gerar_gancho(n["title"])
+            
+            # Trava Adicional: Título Visual
+            last_t = load_last_title()
+            if estetica["hook"] == last_t:
+                log.warning(f"🚫 Gemini gerou o mesmo HOOK ('{last_t}'). Pulando para evitar repetição visual.")
+                continue
+
             img_b = adicionar_texto_premium(img_data, estetica)
             
             misterio = gerar_titulo_misterioso(n["title"])
@@ -487,7 +502,7 @@ def main():
             # Formato: 😱 TAG: MISTERIO... 😱
             msg = f"😱 {estetica['tag'].upper()}: {misterio}... 😱\n.\n{hashtags}{padding_bottom}🔗 VEJA MAIS NO LINK: {n['link']}"
 
-            
+            log.info("📤 Enviando para o Facebook...")
             r_fb = requests.post(
                 f"{FB_GRAPH}/{FB_PAGE_ID}/photos",
                 files={"source": ("f.jpg", img_b, "image/jpeg")},
@@ -501,6 +516,7 @@ def main():
                 log.info(f"🔗 LINK: https://www.facebook.com/{FB_PAGE_ID}/posts/{post_id.split('_')[-1]}")
                 posted.add(n["id"])
                 save_posted(posted)
+                save_last_title(estetica["hook"])
                 break
             else:
                 log.error(f"Erro FB: {resp_data}")

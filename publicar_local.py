@@ -151,12 +151,24 @@ def _noticia_fallback():
     }
 
 # ─── PASSO 3: GERAR GANCHO COM GEMINI ───────────────────────────────────────
+def emoji_to_hex(emoji_char):
+    if not emoji_char: return None
+    try:
+        hex_parts = []
+        for char in emoji_char:
+            h = f"{ord(char):x}"
+            if h != "fe0f":
+                hex_parts.append(h)
+        return "-".join(hex_parts)
+    except:
+        return None
+
 def gerar_gancho(title):
     print("\n" + "="*60)
     print("PASSO 3: Gerando gancho visual com Gemini...")
     print("="*60)
 
-    default = {"hook": "REVELAÇÃO CHOCANTE!", "tag": "NOTÍCIA URGENTE", "color": (255, 0, 0, 200), "emoji": "1f6a8"}
+    default = {"hook": "REVELAÇÃO CHOCANTE!", "tag": "NOTÍCIA URGENTE", "color": (255, 0, 0, 200), "emoji": "1f6a8", "reactions": []}
 
     if not GEMINI_KEY:
         print("  ⚠️ GEMINI_KEY não encontrada. Usando padrão.")
@@ -169,20 +181,17 @@ def gerar_gancho(title):
         "FOFOCA":   {"tag": "VOCÊ NÃO VAI ACREDITAR", "color": (255, 215, 0, 200)},
         "CRIME":    {"tag": "CRIME AGORA", "color": (0, 0, 0, 200)},
     }
-    EMOJI_HEX = {
-        "🚨": "1f6a8", "💀": "1f480", "🔥": "1f525", "💣": "1f4a3",
-        "⚠️": "26a0",  "😱": "1f631", "👀": "1f440", "📢": "1f4e2",
-        "💰": "1f4b0", "🚔": "1f694", "⚽": "26bd",   "🎭": "1f3ad",
-    }
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_KEY}"
         prompt = (
             f'Analise a notícia: "{title}".\n'
-            f"Retorne APENAS uma linha: HOOK | CATEGORY | EMOJI\n"
-            f"- HOOK: título MÁXIMO 3 PALAVRAS em MAIÚSCULAS, camuflando palavras sensíveis (MORTE→M0RT3).\n"
-            f"- CATEGORY: uma de: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
-            f"- EMOJI: um único emoji relacionado ao tema."
+            f"Retorne APENAS uma linha: HOOK | CATEGORY | EMOJI | REACTION_DATA\n"
+            f"- HOOK: título MÁXIMO 3 PALAVRAS em MAIÚSCULAS.\n"
+            f"- CATEGORY: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
+            f"- EMOJI: um único emoji para o tema.\n"
+            f"- REACTION_DATA: 3 reações curtas no formato E1:TEXTO1,E2:TEXTO2,E3:TEXTO3\n"
+            f"  Ex: 😱:Absurdo!,😢:Que triste,🙌:Justiça!"
         )
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         r = requests.post(url, json=payload, timeout=15)
@@ -191,16 +200,27 @@ def gerar_gancho(title):
 
         if "|" in raw:
             parts = [p.strip() for p in raw.split("|")]
-            if len(parts) >= 3:
+            if len(parts) >= 4:
                 hook     = parts[0].replace('"', '').upper()
                 cat_key  = parts[1].upper()
                 emoji_ch = parts[2]
-                config   = CATEGORIES.get(cat_key, CATEGORIES["URGENTE"])
-                e_hex    = EMOJI_HEX.get(emoji_ch, "1f525")
-                print(f"  ✅ Hook: {hook} | Tag: {config['tag']} | Emoji: {emoji_ch}")
-                return {"hook": hook, "tag": config["tag"], "color": config["color"], "emoji": e_hex}
+                react_raw = parts[3]
+
+                # Parse dynamic reactions
+                reactions = []
+                for r_item in react_raw.split(","):
+                    if ":" in r_item:
+                        e_char, r_text = r_item.split(":", 1)
+                        e_hex = emoji_to_hex(e_char.strip())
+                        if e_hex:
+                            reactions.append((e_hex, r_text.strip()))
+
+                config = CATEGORIES.get(cat_key, CATEGORIES["URGENTE"])
+                e_hex  = emoji_to_hex(emoji_ch) or "1f525"
+                print(f"  ✅ Hook: {hook} | Tag: {config['tag']} | Reactions: {len(reactions)}")
+                return {"hook": hook, "tag": config["tag"], "color": config["color"], "emoji": e_hex, "reactions": reactions[:3]}
     except Exception as e:
-        print(f"  ⚠️ Erro Gemini: {e}. Usando padrão.")
+        print(f"  ⚠️ Erro Gemini: {e}")
 
     return default
 
@@ -308,7 +328,7 @@ def gerar_imagem(img_bytes_ou_url, dados):
             ei    = Image.open(BytesIO(re_e.content)).convert("RGBA")
             e_sz  = int(f_size * 1.5)
             ei    = ei.resize((e_sz, e_sz), Image.Resampling.LANCZOS)
-            ix, iy = (bw-e_sz)//2, ty - e_sz - 20*sf
+            ix, iy = (bw-e_sz)//2, ty1 - e_sz - 20*sf
             es = Image.new("RGBA", (bw, bh), (0,0,0,0))
             ImageDraw.Draw(es).ellipse([ix+8*sf, iy+8*sf, ix+e_sz+8*sf, iy+e_sz+8*sf], fill=(0,0,0,150))
             es = es.filter(ImageFilter.GaussianBlur(radius=8*sf))
@@ -316,6 +336,52 @@ def gerar_imagem(img_bytes_ou_url, dados):
             img_hd.paste(ei, (ix, iy), ei)
     except Exception as e:
         print(f"  ⚠️ Emoji não carregado: {e}")
+
+    # Reações
+    reactions = dados.get("reactions", [])
+    if reactions:
+        render_y = ty2 + int(60 * sf)
+        r_emoji_size = int(bh * 0.05)
+        f_react_size = int(bh * 0.025)
+        f_react = ImageFont.truetype(font_path, f_react_size) if font_path else ImageFont.load_default()
+
+        gap = int(40 * sf)
+        sp = int(10 * sf)
+        items = []
+        tot_w = 0
+        
+        for (r_hex, r_text) in reactions:
+            lbb = draw_hd.textbbox((0, 0), r_text, font=f_react)
+            lw_r = lbb[2] - lbb[0]
+            item_w = r_emoji_size + sp + lw_r
+            items.append({"hex": r_hex, "text": r_text, "w": item_w})
+            tot_w += item_w
+        
+        tot_w += gap * (len(reactions) - 1)
+        rx = (bw - tot_w) // 2
+
+        for item in items:
+            try:
+                r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-facebook-96/{item['hex']}.png"
+                r_res = requests.get(r_url, timeout=5)
+                if r_res.status_code != 200:
+                    r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{item['hex']}.png"
+                    r_res = requests.get(r_url, timeout=5)
+                
+                if r_res.status_code == 200:
+                    ri = Image.open(BytesIO(r_res.content)).convert("RGBA")
+                    ri = ri.resize((r_emoji_size, r_emoji_size), Image.Resampling.LANCZOS)
+                    img_hd.paste(ri, (rx, render_y), ri)
+                    
+                    tx_p = rx + r_emoji_size + sp
+                    ty_p = render_y + (r_emoji_size // 2)
+                    
+                    draw_hd.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 180), anchor="lm")
+                    draw_hd.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
+                    
+                    rx += item["w"] + gap
+            except:
+                pass
 
     # CTA
     f_sub = ImageFont.truetype(font_path, int(badge_h*0.75)) if font_path else ImageFont.load_default()
@@ -382,9 +448,9 @@ def publicar(noticia, img_bytes):
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("\n" + "🤖 "*20)
+    print("\n" + "--- "*20)
     print("  BOT NOTÍCIAS — PUBLICAÇÃO LOCAL DE TESTE")
-    print("🤖 "*20)
+    print("--- "*20)
 
     try:
         nome_pagina = verificar_token()
