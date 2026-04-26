@@ -120,7 +120,7 @@ def gerar_gancho(title):
         "emoji": "1f6a8", 
         "hashtags": "#noticias #urgente",
         "category": "URGENTE",
-        "reactions": REACTION_EMOJIS_BY_CATEGORY["URGENTE"]
+        "reactions": [("1f631", "Meu Deus!"), ("1f622", "Que triste"), ("1f621", "Absurdo!")]
     }
     if not GEMINI_KEY: return default_res
     
