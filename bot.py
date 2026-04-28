@@ -181,14 +181,16 @@ def gerar_gancho(title):
                 f"- CATEGORY: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
                 f"- EMOJI: UM emoji para o tema.\n"
                 f"- HASHTAGS: 3 a 5 hashtags.\n"
-                f"- REACTION_DATA: 3 reações curtas no formato E1:TEXTO1,E2:TEXTO2,E3:TEXTO3\n"
+                f"- REACTION_DATA: 3 reações curtas e impactantes no formato E1:TEXTO1,E2:TEXTO2,E3:TEXTO3\n"
+                f"  Ex: 😱:ABSURDO!,😢:QUE TRISTE,🙌:JUSTIÇA!\n"
                 f"NÃO USE nenhum destes títulos (já usados recentemente): {evitar_str}.\n"
-                f"SEJA CRIATIVO E VARIE O TOM!"
+                f"SEJA CRIATIVO, SENSACIONALISTA E VARIE O TOM!"
             )
             payload = {"contents":[{"parts":[{"text":prompt}]}]}
             r = requests.post(url, json=payload, timeout=60)
             r.raise_for_status()
             raw = r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            log.info(f"Gemini Respondeu: {raw}")
             
             if "|" in raw:
                 parts = [p.strip() for p in raw.split("|")]
@@ -366,18 +368,19 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
     # 7. Emojis de Reação (Opinião ao lado direito)
     if reactions:
         # Posição: um pouco abaixo do título, dentro do quadrado 1:1
-        render_y = ty2 + int(60 * sf)
-        r_emoji_size = int(bh * 0.05) 
-        f_react_size = int(bh * 0.025)
+        render_y = ty2 + int(80 * sf)
+        r_emoji_size = int(bh * 0.055) 
+        f_react_size = int(bh * 0.035) # Aumentado para visibilidade
         f_react = ImageFont.truetype(font_path, f_react_size) if font_path else ImageFont.load_default()
 
         # Calcular largura total
-        gap = int(40 * sf)
-        sp = int(10 * sf)
+        gap = int(50 * sf)
+        sp = int(12 * sf)
         items = []
         tot_w = 0
         
         for (r_hex, r_text) in reactions:
+            r_text = r_text.upper() # Sempre em maiúsculas para impacto
             lbb = draw_core.textbbox((0, 0), r_text, font=f_react)
             lw_r = lbb[2] - lbb[0]
             item_w = r_emoji_size + sp + lw_r
@@ -404,8 +407,9 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
                     tx_p = rx + r_emoji_size + sp
                     ty_p = render_y + (r_emoji_size // 2)
                     
-                    draw_core.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 180), anchor="lm")
-                    draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
+                    # Texto com Borda Preta para Legibilidade Total
+                    draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 0), # Amarelo para destaque
+                                   anchor="lm", stroke_width=2*sf, stroke_fill=(0, 0, 0))
                     
                     rx += item["w"] + gap
             except Exception as e:
