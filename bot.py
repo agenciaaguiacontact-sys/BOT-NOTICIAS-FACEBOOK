@@ -322,7 +322,7 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
 
     tx = (bw - lw) // 2
     padding = 35 * sf
-    ty = int(bh * 0.85) - lh # Posicionado no terço inferior do quadrado
+    ty = int(bh * 0.72) - lh # Subindo um pouco o título para dar espaço embaixo
 
     # Fundo do Título (Box)
     tx1, ty1 = tx - padding, ty - padding
@@ -367,20 +367,19 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
 
     # 7. Emojis de Reação (Opinião ao lado direito)
     if reactions:
-        # Posição: um pouco abaixo do título, dentro do quadrado 1:1
-        render_y = ty2 + int(80 * sf)
-        r_emoji_size = int(bh * 0.055) 
-        f_react_size = int(bh * 0.035) # Aumentado para visibilidade
+        # Posição: mais próximo do título, conforme o preview
+        render_y = ty2 + int(30 * sf) 
+        r_emoji_size = int(bh * 0.045) 
+        f_react_size = int(bh * 0.030)
         f_react = ImageFont.truetype(font_path, f_react_size) if font_path else ImageFont.load_default()
 
-        # Calcular largura total
-        gap = int(50 * sf)
-        sp = int(12 * sf)
+        # Calcular largura total do bloco de reações
+        gap = int(60 * sf)
+        sp = int(10 * sf)
         items = []
         tot_w = 0
         
         for (r_hex, r_text) in reactions:
-            r_text = r_text.upper() # Sempre em maiúsculas para impacto
             lbb = draw_core.textbbox((0, 0), r_text, font=f_react)
             lw_r = lbb[2] - lbb[0]
             item_w = r_emoji_size + sp + lw_r
@@ -392,13 +391,8 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
 
         for item in items:
             try:
-                # Tentar Facebook style primeiro, fallback para Apple
-                r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-facebook-96/{item['hex']}.png"
+                r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{item['hex']}.png"
                 r_res = requests.get(r_url, timeout=5)
-                if r_res.status_code != 200:
-                    r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{item['hex']}.png"
-                    r_res = requests.get(r_url, timeout=5)
-                
                 if r_res.status_code == 200:
                     ri = Image.open(BytesIO(r_res.content)).convert("RGBA")
                     ri = ri.resize((r_emoji_size, r_emoji_size), Image.Resampling.LANCZOS)
@@ -407,13 +401,29 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
                     tx_p = rx + r_emoji_size + sp
                     ty_p = render_y + (r_emoji_size // 2)
                     
-                    # Texto com Borda Preta para Legibilidade Total
-                    draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 0), # Amarelo para destaque
-                                   anchor="lm", stroke_width=2*sf, stroke_fill=(0, 0, 0))
+                    # Texto Branco com Sombra Preta (Conforme Preview)
+                    draw_core.text((tx_p + 2*sf, ty_p + 2*sf), item["text"], font=f_react, fill=(0, 0, 0, 200), anchor="lm")
+                    draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
                     
                     rx += item["w"] + gap
-            except Exception as e:
-                log.warning(f"Erro ao renderizar reação {item['hex']}: {e}")
+            except: pass
+
+    # 8. Rodapé Amarelo (Clique em "...mais" para ver na íntegra)
+    try:
+        footer_txt = 'Clique em "...mais" para ver na íntegra'
+        f_footer_size = int(bh * 0.035)
+        f_footer = ImageFont.truetype(font_path, f_footer_size) if font_path else ImageFont.load_default()
+        f_bbox = draw_core.textbbox((0, 0), footer_txt, font=f_footer)
+        fw = f_bbox[2] - f_bbox[0]
+        
+        fx = (bw - fw) // 2
+        fy = bh - int(80 * sf)
+        
+        # Sombra e Texto
+        draw_core.text((fx + 2*sf, fy + 2*sf), footer_txt, font=f_footer, fill=(0, 0, 0, 200), anchor="ls")
+        draw_core.text((fx, fy), footer_txt, font=f_footer, fill=(255, 255, 0), anchor="ls") # Amarelo vivo
+    except: pass
+
 
     # --- FINALIZAÇÃO: REDUÇÃO PARA 1080x1080 PADRÃO ---
     final_img = img_core.resize((base_side, base_side), Image.Resampling.LANCZOS).convert("RGB")
