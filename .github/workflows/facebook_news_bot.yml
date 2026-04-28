@@ -53,7 +53,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
           # Adiciona arquivos de estado forçadamente
-          git add posted_ids.json last_title.txt 2>/dev/null || true
+          git add posted_ids.json recent_hooks.json 2>/dev/null || true
           
           # Só commita se houver mudanças reais
           if git diff --cached --quiet; then

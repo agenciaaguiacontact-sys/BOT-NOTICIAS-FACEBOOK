@@ -71,14 +71,31 @@ def make_article_id(url, title=""):
     combined = f"{clean_url}|{title_norm}"
     return hashlib.sha256(combined.encode()).hexdigest()[:16]
 
-def load_last_title():
-    if os.path.exists("last_title.txt"):
-        try: return open("last_title.txt", "r", encoding="utf-8").read().strip()
-        except: return ""
-    return ""
+RECENT_HOOKS_FILE = "recent_hooks.json"
 
-def save_last_title(title):
-    try: open("last_title.txt", "w", encoding="utf-8").write(title)
+def load_recent_hooks():
+    if os.path.exists(RECENT_HOOKS_FILE):
+        try:
+            with open(RECENT_HOOKS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except: return []
+    # Fallback para o arquivo antigo caso exista
+    if os.path.exists("last_title.txt"):
+        try:
+            t = open("last_title.txt", "r", encoding="utf-8").read().strip()
+            return [t] if t else []
+        except: return []
+    return []
+
+def save_new_hook(hook):
+    hooks = load_recent_hooks()
+    if hook in hooks:
+        hooks.remove(hook)
+    hooks.insert(0, hook)
+    hooks = hooks[:20] # Mantém apenas os 20 últimos
+    try:
+        with open(RECENT_HOOKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(hooks, f, ensure_ascii=False, indent=2)
     except: pass
 
 def baixar_fonte(emoji=False):
@@ -113,20 +130,36 @@ def emoji_to_hex(emoji_char):
         return None
 
 def gerar_gancho(title):
+    recent_hooks = load_recent_hooks()
+    
+    fallbacks = [
+        {"hook": "REVELAÇÃO CHOCANTE!", "category": "URGENTE"},
+        {"hook": "MUNDO EM CHOQUE!", "category": "URGENTE"},
+        {"hook": "VOCÊ VIU ISSO?", "category": "URGENTE"},
+        {"hook": "BOMBA DO DIA!", "category": "URGENTE"},
+        {"hook": "OLHA O QUE ACONTECEU!", "category": "URGENTE"}
+    ]
+    
+    # Filtra fallbacks que já foram usados recentemente
+    safe_fallbacks = [f for f in fallbacks if f["hook"] not in recent_hooks]
+    if not safe_fallbacks: safe_fallbacks = fallbacks
+    
+    choice = random.choice(safe_fallbacks)
     default_res = {
-        "hook": "REVELAÇÃO CHOCANTE!", 
+        "hook": choice["hook"], 
         "tag": "NOTÍCIA URGENTE", 
         "color": (255, 0, 0, 200), 
         "emoji": "1f6a8", 
         "hashtags": "#noticias #urgente",
-        "category": "URGENTE",
+        "category": choice["category"],
         "reactions": [("1f631", "Meu Deus!"), ("1f622", "Que triste"), ("1f621", "Absurdo!")]
     }
+    
     if not GEMINI_KEY: return default_res
     
-    last_t = load_last_title()
+    # Lista de hooks para evitar no prompt
+    evitar_str = ", ".join([f'"{h}"' for h in recent_hooks[:10]])
     
-    # Mapeamento de Categorias, Cores e Tags
     CATEGORIES = {
         "URGENTE": {"tag": "NOTÍCIA URGENTE", "color": (255, 0, 0, 200)},
         "POLITICA": {"tag": "NA POLÍTICA", "color": (0, 102, 255, 200)},
@@ -135,12 +168,6 @@ def gerar_gancho(title):
         "CRIME": {"tag": "CRIME AGORA", "color": (0, 0, 0, 200)},
     }
     
-    EMOJI_HEX = {
-        "🚨": "1f6a8", "💀": "1f480", "🔥": "1f525", "💣": "1f4a3", "⚠️": "26a0", 
-        "😱": "1f631", "👀": "1f440", "📢": "1f4e2", "💰": "1f4b0", "🚔": "1f694",
-        "⚽": "26bd", "🎭": "1f3ad", "🤐": "1f910"
-    }
-
     for attempt in range(3):
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={GEMINI_KEY}"
@@ -150,17 +177,13 @@ def gerar_gancho(title):
                 f"Retorne APENAS uma linha no formato: HOOK | CATEGORY | EMOJI | HASHTAGS | REACTION_DATA\n"
                 f"- HOOK: Título EXTREMAMENTE CURTO (MÁXIMO 3 PALAVRAS) em MAIÚSCULAS.\n"
                 f"  REGRA DE CAMUFLAGEM: substitua letras por numeros/simbolos SOMENTE se o HOOK\n"
-                f"  contiver EXATAMENTE uma destas palavras proibidas:\n"
-                f"  MORTE, MORTO, MORREU, MATAR, MATOU, MATARAM, ASSASSINOU, ASSASSINATO,\n"
-                f"  ESPANCOU, SANGUE, TIRO, TIROS, BALEADO, ESTUPRO, ESTUPROU, ABUSO,\n"
-                f"  TRAFICO, DROGA, DROGAS, COCAINA, CRACK.\n"
-                f"  Exemplos: M0RT3, M@T0U, T1R0, S@NGU3, 3STUPR0.\n"
+                f"  contiver EXATAMENTE uma destas palavras proibidas: MORTE, MORTO, MORREU, MATAR, MATOU, ASSASSINOU, ABUSO, DROGA.\n"
                 f"- CATEGORY: URGENTE, POLITICA, ESPORTE, FOFOCA, CRIME.\n"
                 f"- EMOJI: UM emoji para o tema.\n"
-                f"- HASHTAGS: 3 a 5 hashtags (ex: #noticias #brasil).\n"
+                f"- HASHTAGS: 3 a 5 hashtags.\n"
                 f"- REACTION_DATA: 3 reações curtas no formato E1:TEXTO1,E2:TEXTO2,E3:TEXTO3\n"
-                f"  Ex: 😱:Absurdo!,😢:Que triste,🙌:Justiça!\n"
-                f"Não repita o último título: \"{last_t}\"."
+                f"NÃO USE nenhum destes títulos (já usados recentemente): {evitar_str}.\n"
+                f"SEJA CRIATIVO E VARIE O TOM!"
             )
             payload = {"contents":[{"parts":[{"text":prompt}]}]}
             r = requests.post(url, json=payload, timeout=60)
@@ -176,32 +199,27 @@ def gerar_gancho(title):
                     hashtags = parts[3].lower()
                     react_raw = parts[4]
                     
-                    # Parse dynamic reactions
-                    reactions = []
-                    for r_item in react_raw.split(","):
-                        if ":" in r_item:
-                            e_char, r_text = r_item.split(":", 1)
-                            e_hex = emoji_to_hex(e_char.strip())
-                            if e_hex:
-                                reactions.append((e_hex, r_text.strip()))
-                    
-                    if hook != last_t:
-                        save_last_title(hook)
+                    if hook not in recent_hooks:
+                        reactions = []
+                        for r_item in react_raw.split(","):
+                            if ":" in r_item:
+                                e_char, r_text = r_item.split(":", 1)
+                                e_hex = emoji_to_hex(e_char.strip())
+                                if e_hex: reactions.append((e_hex, r_text.strip()))
+                        
                         config = CATEGORIES.get(cat_key, CATEGORIES["URGENTE"])
                         emoji_hex = emoji_to_hex(emoji_char) or "1f525"
                         return {
-                            "hook": hook, 
-                            "tag": config["tag"],
-                            "color": config["color"], 
-                            "emoji": emoji_hex,
-                            "hashtags": hashtags,
-                            "category": cat_key,
+                            "hook": hook, "tag": config["tag"], "color": config["color"], 
+                            "emoji": emoji_hex, "hashtags": hashtags, "category": cat_key,
                             "reactions": reactions[:3]
                         }
         except Exception as e:
             log.warning(f"Erro Gemini (tentativa {attempt}): {e}")
             
+
     return default_res
+
 
 def gerar_titulo_misterioso(title):
     """Gera uma frase de mistério/curiosidade curta SEM revelar o desfecho da notícia."""
@@ -487,10 +505,10 @@ def main():
             
             estetica = gerar_gancho(n["title"])
             
-            # Trava Adicional: Título Visual
-            last_t = load_last_title()
-            if estetica["hook"] == last_t:
-                log.warning(f"🚫 Gemini gerou o mesmo HOOK ('{last_t}'). Pulando para evitar repetição visual.")
+            # Trava Adicional: Título Visual (Histórico Recente)
+            recent_hooks = load_recent_hooks()
+            if estetica["hook"] in recent_hooks:
+                log.warning(f"🚫 Hook '{estetica['hook']}' já usado recentemente. Pulando para garantir variedade.")
                 continue
 
             img_b = adicionar_texto_premium(img_data, estetica)
@@ -516,7 +534,7 @@ def main():
                 log.info(f"🔗 LINK: https://www.facebook.com/{FB_PAGE_ID}/posts/{post_id.split('_')[-1]}")
                 posted.add(n["id"])
                 save_posted(posted)
-                save_last_title(estetica["hook"])
+                save_new_hook(estetica["hook"])
                 break
             else:
                 log.error(f"Erro FB: {resp_data}")
