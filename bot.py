@@ -365,29 +365,34 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
             img_core.paste(e_img, (ix, iy), e_img)
     except: pass
 
-    # 7. Emojis de Reação + Opinião (Flutuando sobre o gradiente, estilo "Mistério Revelado")
+    # 7. Emojis de Reação + Opinião (Estilo "Mistério Revelado")
     if reactions:
-        # Posição: no final da imagem, sobre o gradiente
-        r_emoji_size = int(bh * 0.045) 
-        f_react_size = int(bh * 0.028)
+        r_emoji_size = int(bh * 0.048) 
+        f_react_size = int(bh * 0.030)
         f_react = ImageFont.truetype(font_path, f_react_size) if font_path else ImageFont.load_default()
 
         # Calcular largura total do bloco para centralizar
         gap = int(60 * sf)
-        sp = int(10 * sf)
+        sp = int(12 * sf)
         items = []
         tot_w = 0
         
         for (r_hex, r_text) in reactions:
-            lbb = draw_core.textbbox((0, 0), r_text, font=f_react)
-            lw_r = lbb[2] - lbb[0]
+            # Usar textlength para maior compatibilidade
+            try:
+                lw_r = int(draw_core.textlength(r_text, font=f_react))
+            except:
+                # Fallback se textlength não existir (versões antigas)
+                lbb = draw_core.textbbox((0, 0), r_text, font=f_react)
+                lw_r = lbb[2] - lbb[0]
+            
             item_w = r_emoji_size + sp + lw_r
-            items.append({"hex": r_hex, "text": r_text, "w": item_w})
+            items.append({"hex": r_hex, "text": r_text, "w": item_w, "lw_r": lw_r})
             tot_w += item_w
         
         tot_w += gap * (len(reactions) - 1)
         rx = (bw - tot_w) // 2
-        render_y = bh - r_emoji_size - int(40 * sf) # Perto da base
+        render_y = bh - r_emoji_size - int(50 * sf) # Perto da base
 
         for item in items:
             try:
@@ -399,14 +404,16 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
                     img_core.paste(ri, (rx, render_y), ri)
                     
                     tx_p = rx + r_emoji_size + sp
-                    ty_p = render_y + (r_emoji_size // 2)
+                    # Cálculo manual de centralização vertical (ty_p)
+                    ty_p = render_y + (r_emoji_size // 2) - (f_react_size // 2)
                     
-                    # Sombra e Texto Branco (Estilo Mistério Revelado)
-                    draw_core.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 200), anchor="lm")
-                    draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
+                    # Desenhar Sombra e Texto sem depender de anchor="lm"
+                    draw_core.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 220))
+                    draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255))
                     
                     rx += item["w"] + gap
-            except: pass
+            except Exception as e:
+                log.warning(f"Erro ao desenhar reação: {e}")
 
 
     # --- FINALIZAÇÃO: REDUÇÃO PARA 1080x1080 PADRÃO ---
