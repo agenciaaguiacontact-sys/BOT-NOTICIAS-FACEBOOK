@@ -415,7 +415,9 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
                     draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
                     
                     rx += item["w"] + gap
-            except: pass
+            except Exception as e:
+                print(f"Erro nas reações: {e}")
+                pass
 
     # 9. Rodapé Amarelo (Fixo)
     try:

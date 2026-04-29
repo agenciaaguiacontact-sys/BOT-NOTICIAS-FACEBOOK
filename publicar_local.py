@@ -229,182 +229,28 @@ def limpar_emojis(texto):
     return re.sub(r'[^\w\s.,!?;:\"\'()\-\u00C0-\u00FF]+', '', texto).strip()
 
 def gerar_imagem(img_bytes_ou_url, dados):
+    import bot
     print("\n" + "="*60)
-    print("PASSO 4: Gerando imagem premium...")
+    print("PASSO 4: Gerando imagem premium (usando motor do bot.py)...")
     print("="*60)
 
     if isinstance(img_bytes_ou_url, bytes):
-        # Já temos os bytes, usar direto
         img_raw = img_bytes_ou_url
     else:
-        # Tentar baixar com User-Agent como fallback
         r = requests.get(img_bytes_ou_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         if r.status_code != 200:
             raise Exception(f"Não foi possível baixar imagem: status {r.status_code}")
         img_raw = r.content
 
-    MAIN_COLOR = dados["color"]
-    texto      = dados["hook"]
-    tag_texto  = dados["tag"]
-    emoji_hex  = dados["emoji"]
-
-    img = Image.open(BytesIO(img_raw)).convert("RGB")
-    w, h = img.size
-    side = min(w, h)
-    img_sq = img.crop(((w-side)//2, (h-side)//2, (w+side)//2, (h+side)//2))
-
-    sf, target = 2, 1080
-    bw = bh = target * sf
-    img_hd = img_sq.resize((bw, bh), Image.Resampling.LANCZOS)
-    img_hd = ImageEnhance.Color(img_hd).enhance(1.3)
-    img_hd = ImageEnhance.Contrast(img_hd).enhance(1.1)
-    img_hd = ImageEnhance.Sharpness(img_hd).enhance(1.4)
-
-    overlay = Image.new("RGBA", (bw, bh), (0,0,0,0))
-    draw_ov = ImageDraw.Draw(overlay)
-    grad_h  = int(bh * 0.70)
-    for y in range(bh - grad_h, bh):
-        alpha = int(245 * ((y - (bh - grad_h)) / grad_h))
-        draw_ov.line([(0, y), (bw, y)], fill=(0, 0, 0, max(0, min(255, alpha))))
-    overlay = overlay.filter(ImageFilter.GaussianBlur(radius=5*sf))
-    img_hd  = Image.alpha_composite(img_hd.convert("RGBA"), overlay)
-    draw_hd = ImageDraw.Draw(img_hd)
-
-    # Fonte
-    font_path = None
-    for f in ["fonts/impact.ttf", "C:\\Windows\\Fonts\\impact.ttf",
-              "fonts/NotoSans-Bold.ttf", "C:\\Windows\\Fonts\\arialbd.ttf"]:
-        if os.path.exists(f):
-            font_path = f
-            break
-
-    # Selo
-    badge_h = int(bh * 0.05)
-    f_badge = ImageFont.truetype(font_path, int(badge_h * 0.75)) if font_path else ImageFont.load_default()
-    bb      = draw_hd.textbbox((0,0), tag_texto, font=f_badge)
-    badge_w = (bb[2]-bb[0]) + 40*sf
-    bx1, by1 = 30*sf, 40*sf
-    bx2, by2 = bx1+badge_w, by1+badge_h
-    draw_hd.rectangle([bx1, by1, bx2, by2], fill=MAIN_COLOR)
-    draw_hd.text(((bx1+bx2)//2, (by1+by2)//2), tag_texto, font=f_badge, fill=(255,255,255), anchor="mm")
-
-    # Título
-    texto_puro = limpar_emojis(texto)
-    f_size = int(bh * 0.10)
-    font   = ImageFont.truetype(font_path, f_size) if font_path else ImageFont.load_default()
-    l      = texto_puro.strip()
-    bb     = draw_hd.textbbox((0,0), l, font=font)
-    lw, lh = bb[2]-bb[0], bb[3]-bb[1]
-    if lw > (bw - 100*sf):
-        f_size = int(f_size * (bw - 100*sf) / lw)
-        font   = ImageFont.truetype(font_path, f_size) if font_path else ImageFont.load_default()
-        bb     = draw_hd.textbbox((0,0), l, font=font)
-        lw, lh = bb[2]-bb[0], bb[3]-bb[1]
-
-    tx = (bw-lw)//2
-    pad = 35*sf
-    ty  = int(bh * 0.82) - lh
-    tx1, ty1 = tx-pad, ty-pad
-    tx2, ty2 = tx+lw+pad, ty+lh+pad
-
-    box = Image.new("RGBA", (bw, bh), (0,0,0,0))
-    ImageDraw.Draw(box).rectangle([tx1, ty1, tx2, ty2], fill=MAIN_COLOR)
-    img_hd = Image.alpha_composite(img_hd, box)
-    cx, cy = (tx1+tx2)//2, (ty1+ty2)//2
-
-    shadow = Image.new("RGBA", (bw, bh), (0,0,0,0))
-    ImageDraw.Draw(shadow).text((cx+4*sf, cy+4*sf), l, font=font, fill=(0,0,0,200), anchor="mm")
-    shadow = shadow.filter(ImageFilter.GaussianBlur(radius=3*sf))
-    img_hd = Image.alpha_composite(img_hd, shadow)
-
-    draw_hd = ImageDraw.Draw(img_hd)
-    draw_hd.text((cx, cy), l, font=font, fill=(255,255,255), anchor="mm")
-
-    # Emoji
-    try:
-        e_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{emoji_hex}.png"
-        re_e  = requests.get(e_url, timeout=10)
-        if re_e.status_code == 200:
-            ei    = Image.open(BytesIO(re_e.content)).convert("RGBA")
-            e_sz  = int(f_size * 1.5)
-            ei    = ei.resize((e_sz, e_sz), Image.Resampling.LANCZOS)
-            ix, iy = (bw-e_sz)//2, ty1 - e_sz - 20*sf
-            es = Image.new("RGBA", (bw, bh), (0,0,0,0))
-            ImageDraw.Draw(es).ellipse([ix+8*sf, iy+8*sf, ix+e_sz+8*sf, iy+e_sz+8*sf], fill=(0,0,0,150))
-            es = es.filter(ImageFilter.GaussianBlur(radius=8*sf))
-            img_hd = Image.alpha_composite(img_hd, es)
-            img_hd.paste(ei, (ix, iy), ei)
-    except Exception as e:
-        print(f"  ⚠️ Emoji não carregado: {e}")
-
-    # Reações
-    reactions = dados.get("reactions", [])
-    if reactions:
-        render_y = ty2 + int(60 * sf)
-        r_emoji_size = int(bh * 0.05)
-        f_react_size = int(bh * 0.025)
-        f_react = ImageFont.truetype(font_path, f_react_size) if font_path else ImageFont.load_default()
-
-        gap = int(40 * sf)
-        sp = int(10 * sf)
-        items = []
-        tot_w = 0
-        
-        for (r_hex, r_text) in reactions:
-            lbb = draw_hd.textbbox((0, 0), r_text, font=f_react)
-            lw_r = lbb[2] - lbb[0]
-            item_w = r_emoji_size + sp + lw_r
-            items.append({"hex": r_hex, "text": r_text, "w": item_w})
-            tot_w += item_w
-        
-        tot_w += gap * (len(reactions) - 1)
-        rx = (bw - tot_w) // 2
-
-        for item in items:
-            try:
-                r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-facebook-96/{item['hex']}.png"
-                r_res = requests.get(r_url, timeout=5)
-                if r_res.status_code != 200:
-                    r_url = f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-apple-160/{item['hex']}.png"
-                    r_res = requests.get(r_url, timeout=5)
-                
-                if r_res.status_code == 200:
-                    ri = Image.open(BytesIO(r_res.content)).convert("RGBA")
-                    ri = ri.resize((r_emoji_size, r_emoji_size), Image.Resampling.LANCZOS)
-                    img_hd.paste(ri, (rx, render_y), ri)
-                    
-                    tx_p = rx + r_emoji_size + sp
-                    ty_p = render_y + (r_emoji_size // 2)
-                    
-                    draw_hd.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 180), anchor="lm")
-                    draw_hd.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
-                    
-                    rx += item["w"] + gap
-            except:
-                pass
-
-    # CTA
-    f_sub = ImageFont.truetype(font_path, int(badge_h*0.75)) if font_path else ImageFont.load_default()
-    cta_t = 'Clique em "...mais" para ver na íntegra'
-    draw_hd = ImageDraw.Draw(img_hd)
-    bw_cta = draw_hd.textbbox((0,0), cta_t, font=f_sub)
-    cx_cta = (bw-(bw_cta[2]-bw_cta[0]))//2
-    cy_cta = bh - 65*sf
-    cta_s  = Image.new("RGBA", (bw, bh), (0,0,0,0))
-    ImageDraw.Draw(cta_s).text((cx_cta+2*sf, cy_cta+2*sf), cta_t, font=f_sub, fill=(0,0,0,220))
-    cta_s = cta_s.filter(ImageFilter.GaussianBlur(radius=2*sf))
-    img_hd = Image.alpha_composite(img_hd, cta_s)
-    ImageDraw.Draw(img_hd).text((cx_cta, cy_cta), cta_t, font=f_sub, fill=(255,215,0))
-
-    final = img_hd.resize((target, target), Image.Resampling.LANCZOS).convert("RGB")
-    out   = BytesIO()
-    final.save(out, format="JPEG", quality=98)
+    # Usar exatamente a mesma lógica visual de produção
+    out_bytes = bot.adicionar_texto_premium(img_raw, dados)
 
     # Salvar cópia local para conferência
-    final.save("preview_publicacao.jpg")
+    with open("preview_publicacao.jpg", "wb") as f:
+        f.write(out_bytes)
     print("  ✅ Imagem gerada e salva como preview_publicacao.jpg")
 
-    return out.getvalue()
+    return out_bytes
 
 # ─── PASSO 5: PUBLICAR NO FACEBOOK ──────────────────────────────────────────
 def publicar(noticia, img_bytes):
