@@ -365,29 +365,20 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
             img_core.paste(e_img, (ix, iy), e_img)
     except: pass
 
-    # 7. Barra de Rodapé (Estilo Premium)
-    footer_bar_h = int(bh * 0.12)
-    footer_bar_y = bh - footer_bar_h
-    overlay_bar = Image.new("RGBA", (bw, bh), (0, 0, 0, 0))
-    draw_bar = ImageDraw.Draw(overlay_bar)
-    draw_bar.rectangle([0, footer_bar_y, bw, bh], fill=(0, 0, 0, 180)) # Barra preta semi-transparente
-    img_core = Image.alpha_composite(img_core, overlay_bar)
-    draw_core = ImageDraw.Draw(img_core)
-
-    # 8. Emojis de Reação + Opinião
+    # 7. Emojis de Reação + Opinião (Flutuando sobre o gradiente, estilo "Mistério Revelado")
     if reactions:
-        r_emoji_size = int(bh * 0.05) 
-        f_react_size = int(bh * 0.032)
+        # Posição: no final da imagem, sobre o gradiente
+        r_emoji_size = int(bh * 0.045) 
+        f_react_size = int(bh * 0.028)
         f_react = ImageFont.truetype(font_path, f_react_size) if font_path else ImageFont.load_default()
 
         # Calcular largura total do bloco para centralizar
-        gap = int(70 * sf)
-        sp = int(12 * sf)
+        gap = int(60 * sf)
+        sp = int(10 * sf)
         items = []
         tot_w = 0
         
         for (r_hex, r_text) in reactions:
-            r_text = r_text.strip().upper()
             lbb = draw_core.textbbox((0, 0), r_text, font=f_react)
             lw_r = lbb[2] - lbb[0]
             item_w = r_emoji_size + sp + lw_r
@@ -396,7 +387,7 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
         
         tot_w += gap * (len(reactions) - 1)
         rx = (bw - tot_w) // 2
-        render_y = footer_bar_y + int(15 * sf) # No topo da barra
+        render_y = bh - r_emoji_size - int(40 * sf) # Perto da base
 
         for item in items:
             try:
@@ -410,29 +401,12 @@ def adicionar_texto_premium(img_bytes, dados_esteticos):
                     tx_p = rx + r_emoji_size + sp
                     ty_p = render_y + (r_emoji_size // 2)
                     
-                    # Sombra e Texto Branco
-                    draw_core.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 255), anchor="lm")
+                    # Sombra e Texto Branco (Estilo Mistério Revelado)
+                    draw_core.text((tx_p + 1*sf, ty_p + 1*sf), item["text"], font=f_react, fill=(0, 0, 0, 200), anchor="lm")
                     draw_core.text((tx_p, ty_p), item["text"], font=f_react, fill=(255, 255, 255), anchor="lm")
                     
                     rx += item["w"] + gap
-            except Exception as e:
-                print(f"Erro nas reações: {e}")
-                pass
-
-    # 9. Rodapé Amarelo (Fixo)
-    try:
-        footer_txt = 'Clique em "...mais" para ver na íntegra'
-        f_footer_size = int(bh * 0.035)
-        f_footer = ImageFont.truetype(font_path, f_footer_size) if font_path else ImageFont.load_default()
-        f_bbox = draw_core.textbbox((0, 0), footer_txt, font=f_footer)
-        fw = f_bbox[2] - f_bbox[0]
-        
-        fx = (bw - fw) // 2
-        fy = bh - int(25 * sf) # Bem no final da barra
-        
-        draw_core.text((fx + 2*sf, fy + 2*sf), footer_txt, font=f_footer, fill=(0, 0, 0, 255), anchor="ls")
-        draw_core.text((fx, fy), footer_txt, font=f_footer, fill=(255, 255, 0), anchor="ls")
-    except: pass
+            except: pass
 
 
     # --- FINALIZAÇÃO: REDUÇÃO PARA 1080x1080 PADRÃO ---
